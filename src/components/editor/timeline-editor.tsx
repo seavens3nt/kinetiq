@@ -186,11 +186,13 @@ export function TimelineEditor() {
           );
         })}
 
-        <div
-          className="pointer-events-none absolute bottom-0 top-0 z-20 w-px bg-[#d7ff45]"
-          style={{ left: `calc(${LABEL_WIDTH}px + (100% - ${LABEL_WIDTH}px) * ${currentTime / duration})` }}
-        >
-          <div className="absolute -left-1.5 top-0 h-0 w-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-[#d7ff45]" />
+        <div className="pointer-events-none absolute bottom-0 left-[120px] right-0 top-0 z-20">
+          <div
+            className="absolute bottom-0 top-0 w-px bg-[#d7ff45]"
+            style={{ left: `${(currentTime / duration) * 100}%` }}
+          >
+            <div className="absolute -left-1.5 top-0 h-0 w-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-[#d7ff45]" />
+          </div>
         </div>
       </div>
     </section>
