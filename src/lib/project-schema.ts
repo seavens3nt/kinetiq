@@ -9,6 +9,14 @@ export const MotionPresetIdSchema = z.enum([
   "split-rise",
 ]);
 
+export const SplitBySchema = z.enum(["words", "characters"]);
+
+export const MotionSettingsSchema = z.object({
+  duration: z.number().min(0.1).max(3),
+  stagger: z.number().min(0).max(0.5),
+  splitBy: SplitBySchema,
+});
+
 export const BackgroundPresetIdSchema = z.enum([
   "ink",
   "paper",
@@ -27,6 +35,7 @@ export const TextElementSchema = z.object({
   fontWeight: z.number(),
   color: z.string(),
   motionPresetId: MotionPresetIdSchema,
+  motionSettings: MotionSettingsSchema,
 });
 
 export const SceneSchema = z.object({
@@ -48,6 +57,8 @@ export const ProjectSchema = z.object({
 });
 
 export type MotionPresetId = z.infer<typeof MotionPresetIdSchema>;
+export type SplitBy = z.infer<typeof SplitBySchema>;
+export type MotionSettings = z.infer<typeof MotionSettingsSchema>;
 export type BackgroundPresetId = z.infer<typeof BackgroundPresetIdSchema>;
 export type TextElement = z.infer<typeof TextElementSchema>;
 export type Scene = z.infer<typeof SceneSchema>;
