@@ -1,56 +1,66 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { MotionPresetId } from "@/lib/project-schema";
+import type { MotionPresetId, MotionSettings } from "@/lib/project-schema";
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.07 },
-  },
-};
+function getTokens(text: string, splitBy: MotionSettings["splitBy"]) {
+  if (splitBy === "characters") {
+    return Array.from(text).map((char) => (char === " " ? "\u00a0" : char));
+  }
 
-function Word({ children }: { children: string }) {
-  return (
-    <motion.span
-      variants={{
-        hidden: { opacity: 0, y: 42, filter: "blur(8px)" },
-        visible: {
-          opacity: 1,
-          y: 0,
-          filter: "blur(0px)",
-          transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
-        },
-      }}
-      className="inline-block"
-    >
-      {children}
-    </motion.span>
-  );
+  return text.split(/\s+/);
 }
 
 export function AnimatedText({
   text,
   presetId,
+  motionSettings,
   replayKey,
 }: {
   text: string;
   presetId: MotionPresetId;
+  motionSettings: MotionSettings;
   replayKey: number;
 }) {
   const commonClass = "text-center text-5xl font-black tracking-[-0.055em] sm:text-7xl lg:text-8xl";
 
   if (presetId === "split-rise") {
+    const tokens = getTokens(text, motionSettings.splitBy);
+
     return (
       <motion.div
-        key={`${presetId}-${replayKey}`}
-        variants={containerVariants}
+        key={`${presetId}-${replayKey}-${motionSettings.splitBy}`}
         initial="hidden"
         animate="visible"
-        className={`${commonClass} flex max-w-4xl flex-wrap justify-center gap-x-[0.22em] gap-y-1`}
+        variants={{
+          hidden: {},
+          visible: {
+            transition: { staggerChildren: motionSettings.stagger },
+          },
+        }}
+        className={`${commonClass} flex max-w-4xl flex-wrap justify-center ${
+          motionSettings.splitBy === "words" ? "gap-x-[0.22em] gap-y-1" : "gap-0"
+        }`}
       >
-        {text.split(/\s+/).map((word, index) => (
-          <Word key={`${word}-${index}`}>{word}</Word>
+        {tokens.map((token, index) => (
+          <motion.span
+            key={`${token}-${index}`}
+            variants={{
+              hidden: { opacity: 0, y: 42, filter: "blur(8px)" },
+              visible: {
+                opacity: 1,
+                y: 0,
+                filter: "blur(0px)",
+                transition: {
+                  duration: motionSettings.duration,
+                  ease: [0.22, 1, 0.36, 1],
+                },
+              },
+            }}
+            className="inline-block"
+          >
+            {token}
+          </motion.span>
         ))}
       </motion.div>
     );
@@ -72,7 +82,7 @@ export function AnimatedText({
       key={`${presetId}-${replayKey}`}
       initial={variants.initial}
       animate={variants.animate}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: motionSettings.duration, ease: [0.22, 1, 0.36, 1] }}
       className={commonClass}
     >
       {text}
