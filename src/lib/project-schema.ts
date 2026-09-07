@@ -34,6 +34,8 @@ export const TextElementSchema = z.object({
   fontSize: z.number(),
   fontWeight: z.number(),
   color: z.string(),
+  startTime: z.number().min(0),
+  duration: z.number().positive(),
   motionPresetId: MotionPresetIdSchema,
   motionSettings: MotionSettingsSchema,
 });
