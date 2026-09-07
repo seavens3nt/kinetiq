@@ -16,13 +16,17 @@ export function AnimatedText({
   presetId,
   motionSettings,
   replayKey,
+  compact = false,
 }: {
   text: string;
   presetId: MotionPresetId;
   motionSettings: MotionSettings;
   replayKey: number;
+  compact?: boolean;
 }) {
-  const commonClass = "text-center text-5xl font-black tracking-[-0.055em] sm:text-7xl lg:text-8xl";
+  const commonClass = compact
+    ? "text-center text-lg font-black tracking-[-0.04em]"
+    : "text-center text-5xl font-black tracking-[-0.055em] sm:text-7xl lg:text-8xl";
 
   if (presetId === "split-rise") {
     const tokens = getTokens(text, motionSettings.splitBy);
@@ -46,7 +50,7 @@ export function AnimatedText({
           <motion.span
             key={`${token}-${index}`}
             variants={{
-              hidden: { opacity: 0, y: 42, filter: "blur(8px)" },
+              hidden: { opacity: 0, y: compact ? 16 : 42, filter: compact ? "blur(4px)" : "blur(8px)" },
               visible: {
                 opacity: 1,
                 y: 0,
@@ -69,10 +73,10 @@ export function AnimatedText({
   const variants = {
     none: { initial: {}, animate: {} },
     fade: { initial: { opacity: 0 }, animate: { opacity: 1 } },
-    rise: { initial: { opacity: 0, y: 50 }, animate: { opacity: 1, y: 0 } },
+    rise: { initial: { opacity: 0, y: compact ? 18 : 50 }, animate: { opacity: 1, y: 0 } },
     pop: { initial: { opacity: 0, scale: 0.78 }, animate: { opacity: 1, scale: 1 } },
     "blur-reveal": {
-      initial: { opacity: 0, filter: "blur(18px)", scale: 1.04 },
+      initial: { opacity: 0, filter: compact ? "blur(8px)" : "blur(18px)", scale: 1.04 },
       animate: { opacity: 1, filter: "blur(0px)", scale: 1 },
     },
   }[presetId];
