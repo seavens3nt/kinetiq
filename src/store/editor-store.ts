@@ -33,6 +33,8 @@ const initialProject: Project = {
           fontSize: 96,
           fontWeight: 800,
           color: "#f7f7f4",
+          startTime: 0.35,
+          duration: 2.8,
           motionPresetId: "split-rise",
           motionSettings: {
             duration: 0.55,
@@ -48,12 +50,18 @@ const initialProject: Project = {
 type EditorStore = {
   project: Project;
   replayKey: number;
+  currentTime: number;
+  selectedElementId: string | null;
   setHeadline: (content: string) => void;
   setMotionPreset: (presetId: MotionPresetId) => void;
   setMotionDuration: (duration: number) => void;
   setMotionStagger: (stagger: number) => void;
   setSplitBy: (splitBy: SplitBy) => void;
   setBackgroundPreset: (presetId: BackgroundPresetId) => void;
+  setCurrentTime: (time: number) => void;
+  setSelectedElement: (elementId: string | null) => void;
+  setElementTiming: (elementId: string, startTime: number, duration: number) => void;
+  setSceneDuration: (duration: number) => void;
   replay: () => void;
 };
 
@@ -81,6 +89,8 @@ function updateHeadlineMotion(
 export const useEditorStore = create<EditorStore>((set) => ({
   project: initialProject,
   replayKey: 0,
+  currentTime: 0,
+  selectedElementId: "headline-1",
   setHeadline: (content) =>
     set((state) => ({
       project: {
@@ -138,5 +148,61 @@ export const useEditorStore = create<EditorStore>((set) => ({
         ),
       },
     })),
-  replay: () => set((state) => ({ replayKey: state.replayKey + 1 })),
+  setCurrentTime: (time) =>
+    set((state) => {
+      const sceneDuration = state.project.scenes[0].durationInSeconds;
+      return { currentTime: Math.min(sceneDuration, Math.max(0, time)) };
+    }),
+  setSelectedElement: (selectedElementId) => set({ selectedElementId }),
+  setElementTiming: (elementId, startTime, duration) =>
+    set((state) => {
+      const sceneDuration = state.project.scenes[0].durationInSeconds;
+      const safeStart = Math.min(Math.max(0, startTime), Math.max(0, sceneDuration - 0.1));
+      const safeDuration = Math.min(Math.max(0.1, duration), sceneDuration - safeStart);
+
+      return {
+        project: {
+          ...state.project,
+          scenes: state.project.scenes.map((scene, sceneIndex) =>
+            sceneIndex === 0
+              ? {
+                  ...scene,
+                  elements: scene.elements.map((element) =>
+                    element.id === elementId
+                      ? { ...element, startTime: safeStart, duration: safeDuration }
+                      : element,
+                  ),
+                }
+              : scene,
+          ),
+        },
+      };
+    }),
+  setSceneDuration: (duration) =>
+    set((state) => {
+      const safeDuration = Math.max(1, duration);
+      return {
+        project: {
+          ...state.project,
+          scenes: state.project.scenes.map((scene, index) =>
+            index === 0
+              ? {
+                  ...scene,
+                  durationInSeconds: safeDuration,
+                  elements: scene.elements.map((element) => ({
+                    ...element,
+                    startTime: Math.min(element.startTime, Math.max(0, safeDuration - 0.1)),
+                    duration: Math.min(
+                      element.duration,
+                      Math.max(0.1, safeDuration - Math.min(element.startTime, Math.max(0, safeDuration - 0.1))),
+                    ),
+                  })),
+                }
+              : scene,
+          ),
+        },
+        currentTime: Math.min(state.currentTime, safeDuration),
+      };
+    }),
+  replay: () => set((state) => ({ replayKey: state.replayKey + 1, currentTime: 0 })),
 }));
