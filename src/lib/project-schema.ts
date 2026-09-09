@@ -81,6 +81,8 @@ export const VisualComponentSchema = z.discriminatedUnion("type", [
 export const LayerSchema = z.object({
   id: z.string(),
   name: z.string(),
+  visible: z.boolean(),
+  locked: z.boolean(),
   components: z.array(VisualComponentSchema),
 });
 
@@ -92,6 +94,14 @@ export const MusicTrackSchema = z.object({
   duration: z.number().positive(),
   volume: z.number().min(0).max(1),
   loop: z.boolean(),
+  muted: z.boolean(),
+  locked: z.boolean(),
+});
+
+export const TimelineMarkerSchema = z.object({
+  id: z.string(),
+  time: z.number().min(0),
+  label: z.string(),
 });
 
 export const SceneSchema = z.object({
@@ -101,6 +111,7 @@ export const SceneSchema = z.object({
   backgroundPresetId: BackgroundPresetIdSchema,
   layers: z.array(LayerSchema),
   musicTracks: z.array(MusicTrackSchema),
+  markers: z.array(TimelineMarkerSchema),
 });
 
 export const ProjectSchema = z.object({
@@ -125,5 +136,6 @@ export type UIComponent = z.infer<typeof UIComponentSchema>;
 export type VisualComponent = z.infer<typeof VisualComponentSchema>;
 export type Layer = z.infer<typeof LayerSchema>;
 export type MusicTrack = z.infer<typeof MusicTrackSchema>;
+export type TimelineMarker = z.infer<typeof TimelineMarkerSchema>;
 export type Scene = z.infer<typeof SceneSchema>;
 export type Project = z.infer<typeof ProjectSchema>;
