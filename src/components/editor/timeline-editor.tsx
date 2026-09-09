@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useEditorStore } from "@/store/editor-store";
 
-const LABEL_WIDTH = 160;
+const LABEL_WIDTH = 152;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -19,6 +19,7 @@ export function TimelineEditor() {
     selectedElementId,
     setCurrentTime,
     togglePlayback,
+    replay,
     setSelectedElement,
     setElementTiming,
     setSceneDuration,
@@ -103,52 +104,47 @@ export function TimelineEditor() {
   };
 
   return (
-    <section className="border-t border-white/10 bg-[#0d0e12] text-white">
-      <div className="border-b border-white/10 bg-[#101116] px-3 py-2">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <div className="mr-1 shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Scenes</div>
+    <section className="shrink-0 border-t border-white/10 bg-[#0d0e12] text-white">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-[#101116] px-3 py-1.5">
+        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Scenes</span>
+        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
           {project.scenes.map((item, index) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setActiveScene(index)}
-              className={`shrink-0 rounded-lg border px-3 py-2 text-left transition ${
+              className={`shrink-0 rounded-md border px-2.5 py-1.5 text-left transition ${
                 activeSceneIndex === index
                   ? "border-[#d7ff45] bg-[#d7ff45]/10"
                   : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
               }`}
             >
-              <div className="text-xs font-semibold">{item.name}</div>
-              <div className="mt-0.5 text-[10px] text-white/35">
-                {item.durationInSeconds.toFixed(1)}s · {item.elements.length} layer{item.elements.length === 1 ? "" : "s"}
-              </div>
+              <div className="text-[11px] font-semibold">{item.name}</div>
+              <div className="text-[9px] text-white/35">{item.durationInSeconds.toFixed(1)}s · {item.elements.length}L</div>
             </button>
           ))}
           <button
             type="button"
             onClick={addScene}
-            className="shrink-0 rounded-lg border border-dashed border-white/15 px-3 py-2 text-xs text-white/50 transition hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
+            className="shrink-0 rounded-md border border-dashed border-white/15 px-2.5 py-1.5 text-[11px] text-white/50 hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
           >
             + Scene
           </button>
-          <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
-            <button type="button" onClick={duplicateScene} className="text-[11px] text-white/40 hover:text-white">
-              Duplicate
-            </button>
-            <button
-              type="button"
-              onClick={deleteScene}
-              disabled={project.scenes.length === 1}
-              className="text-[11px] text-white/40 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-20"
-            >
-              Delete
-            </button>
-          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 pl-2">
+          <button onClick={duplicateScene} className="text-[10px] text-white/35 hover:text-white">Duplicate</button>
+          <button
+            onClick={deleteScene}
+            disabled={project.scenes.length === 1}
+            className="text-[10px] text-white/35 hover:text-red-300 disabled:opacity-20"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={togglePlayback}
             className="grid h-8 w-8 place-items-center rounded-full bg-[#d7ff45] text-xs font-black text-black"
@@ -156,16 +152,19 @@ export function TimelineEditor() {
           >
             {isPlaying ? "Ⅱ" : "▶"}
           </button>
-          <div>
-            <div className="text-sm font-semibold">{scene.name}</div>
-            <div className="text-xs text-white/35">Scenes, layers, and timing live here.</div>
+          <button
+            onClick={replay}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:bg-white/[0.08]"
+          >
+            Replay
+          </button>
+          <div className="ml-1 text-[11px] tabular-nums text-white/45">
+            {currentTime.toFixed(2)} / {duration.toFixed(2)}s
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-xs tabular-nums text-white/45">
-            {currentTime.toFixed(2)}s / {duration.toFixed(2)}s
-          </div>
-          <label className="hidden items-center gap-2 text-xs text-white/50 sm:flex">
+
+        <div className="flex items-center gap-2">
+          <label className="hidden items-center gap-1.5 text-[11px] text-white/45 sm:flex">
             Length
             <input
               type="number"
@@ -173,14 +172,14 @@ export function TimelineEditor() {
               step="0.5"
               value={duration}
               onChange={(event) => setSceneDuration(Number(event.target.value) || 1)}
-              className="w-16 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-white outline-none"
+              className="w-14 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-white outline-none"
             />
             s
           </label>
           <button
             type="button"
             onClick={addTextElement}
-            className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/70 transition hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
+            className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-white/70 hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
           >
             + Layer
           </button>
@@ -189,13 +188,13 @@ export function TimelineEditor() {
 
       <div
         ref={timelineRef}
-        className="relative max-h-[330px] select-none overflow-y-auto"
+        className="relative max-h-[230px] select-none overflow-y-auto"
         onPointerDown={beginPlayheadDrag}
         onPointerMove={movePlayhead}
       >
-        <div className="sticky top-0 z-10 grid grid-cols-[160px_1fr] border-b border-white/10 bg-[#0d0e12]">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/30">Layers</span>
+        <div className="sticky top-0 z-10 grid grid-cols-[152px_1fr] border-b border-white/10 bg-[#0d0e12]">
+          <div className="flex items-center justify-between px-3 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">Layers</span>
             {selectedElementId && scene.elements.length > 1 && (
               <button
                 type="button"
@@ -203,32 +202,32 @@ export function TimelineEditor() {
                   event.stopPropagation();
                   deleteSelectedElement();
                 }}
-                className="text-[10px] text-white/30 hover:text-red-300"
+                className="text-[9px] text-white/30 hover:text-red-300"
               >
-                Delete selected
+                Delete
               </button>
             )}
           </div>
-          <div className="relative h-9">
+          <div className="relative h-8">
             {ticks.map((tick) => (
               <div
                 key={tick}
                 className="absolute top-0 h-full border-l border-white/10"
                 style={{ left: `${(tick / duration) * 100}%` }}
               >
-                <span className="absolute left-1 top-2 text-[10px] text-white/35">{tick}s</span>
+                <span className="absolute left-1 top-1.5 text-[9px] text-white/35">{tick}s</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-[160px_1fr] border-b border-white/10">
-          <div className="flex items-center gap-2 px-3 py-3 text-xs text-white/55">
-            <span className="grid h-5 w-5 place-items-center rounded bg-white/[0.05] text-[10px]">BG</span>
+        <div className="grid grid-cols-[152px_1fr] border-b border-white/10">
+          <div className="flex items-center gap-2 px-3 py-2 text-[11px] text-white/55">
+            <span className="grid h-5 w-5 place-items-center rounded bg-white/[0.05] text-[9px]">BG</span>
             <span>Background</span>
           </div>
-          <div className="relative h-12 bg-white/[0.015]">
-            <div className="absolute inset-y-2 left-0 right-0 rounded-md border border-white/10 bg-white/[0.04] px-3 text-[11px] leading-8 text-white/45">
+          <div className="relative h-10 bg-white/[0.015]">
+            <div className="absolute inset-y-1.5 left-0 right-0 rounded-md border border-white/10 bg-white/[0.04] px-3 text-[10px] leading-7 text-white/45">
               {scene.backgroundPresetId}
             </div>
           </div>
@@ -240,21 +239,21 @@ export function TimelineEditor() {
           const isSelected = selectedElementId === element.id;
 
           return (
-            <div key={element.id} className="grid grid-cols-[160px_1fr] border-b border-white/10">
+            <div key={element.id} className="grid grid-cols-[152px_1fr] border-b border-white/10">
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   setSelectedElement(element.id);
                 }}
-                className={`flex items-center gap-2 px-3 py-3 text-left text-xs ${isSelected ? "bg-[#d7ff45]/5 text-[#d7ff45]" : "text-white/55 hover:bg-white/[0.025]"}`}
+                className={`flex items-center gap-2 px-3 py-2 text-left text-[11px] ${isSelected ? "bg-[#d7ff45]/5 text-[#d7ff45]" : "text-white/55 hover:bg-white/[0.025]"}`}
               >
-                <span className={`grid h-5 w-5 place-items-center rounded text-[10px] ${isSelected ? "bg-[#d7ff45]/15" : "bg-white/[0.05]"}`}>T</span>
+                <span className={`grid h-5 w-5 place-items-center rounded text-[9px] ${isSelected ? "bg-[#d7ff45]/15" : "bg-white/[0.05]"}`}>T</span>
                 <span className="min-w-0 flex-1 truncate">{element.content || `Text ${index + 1}`}</span>
               </button>
-              <div className="relative h-12 bg-white/[0.01]">
+              <div className="relative h-10 bg-white/[0.01]">
                 <div
-                  className={`absolute inset-y-2 rounded-md border text-[11px] ${
+                  className={`absolute inset-y-1.5 rounded-md border text-[10px] ${
                     isSelected
                       ? "border-[#d7ff45] bg-[#d7ff45]/15 text-[#e8ff8d]"
                       : "border-[#8067ff]/50 bg-[#8067ff]/15 text-[#c8bdff]"
@@ -266,7 +265,7 @@ export function TimelineEditor() {
                     className="absolute inset-y-0 left-0 w-2 cursor-ew-resize rounded-l-md bg-white/10 hover:bg-white/20"
                     onPointerDown={(event) => beginBlockDrag(event, element.id, "resize-start")}
                   />
-                  <div className="pointer-events-none truncate px-3 leading-8">{element.content}</div>
+                  <div className="pointer-events-none truncate px-3 leading-7">{element.content}</div>
                   <div
                     className="absolute inset-y-0 right-0 w-2 cursor-ew-resize rounded-r-md bg-white/10 hover:bg-white/20"
                     onPointerDown={(event) => beginBlockDrag(event, element.id, "resize-end")}
@@ -277,7 +276,7 @@ export function TimelineEditor() {
           );
         })}
 
-        <div className="pointer-events-none absolute bottom-0 left-[160px] right-0 top-0 z-20">
+        <div className="pointer-events-none absolute bottom-0 left-[152px] right-0 top-0 z-20">
           <div
             className="absolute bottom-0 top-0 w-px bg-[#d7ff45]"
             style={{ left: `${(currentTime / duration) * 100}%` }}
