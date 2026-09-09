@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@remotion/player": "latest",
+    "@supabase/supabase-js": "^2.57.4",
     "motion": "latest",
     "next": "latest",
     "react": "latest",
