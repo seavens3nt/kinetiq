@@ -30,7 +30,7 @@ function makeTextComponent(index = 0, overrides: Partial<TextComponent> = {}): T
     id: id("text"),
     name: index === 0 ? "Heading" : `Text ${index + 1}`,
     type: "text",
-    content: index === 0 ? "MAKE IDEAS MOVE." : `TEXT ${index + 1}`,
+    content: index === 0 ? "Add heading" : `Text ${index + 1}`,
     x: 120,
     y: 760 + index * 120,
     width: 840,
@@ -65,36 +65,28 @@ function makeComponent(type: AddableComponentType, index = 0): VisualComponent {
   return { ...base, type: "ui", preset: "notification", label: "Notification" };
 }
 
-const initialText = makeTextComponent(0, {
-  id: "headline-1",
-  startTime: 0.35,
-  duration: 2.8,
-});
+function makeBlankProject(width = 1080, height = 1920): Project {
+  return {
+    version: 1,
+    id: id("project"),
+    name: "Untitled Kinetiq Project",
+    width,
+    height,
+    fps: 30,
+    scenes: [
+      {
+        id: "master",
+        name: "Master",
+        durationInSeconds: 6,
+        backgroundPresetId: "ink",
+        layers: [],
+        musicTracks: [],
+      },
+    ],
+  };
+}
 
-const initialLayer: Layer = {
-  id: "layer-1",
-  name: "Layer 1",
-  components: [initialText],
-};
-
-const initialProject: Project = {
-  version: 1,
-  id: "demo-project",
-  name: "Untitled Kinetiq Project",
-  width: 1080,
-  height: 1920,
-  fps: 30,
-  scenes: [
-    {
-      id: "master",
-      name: "Master",
-      durationInSeconds: 6,
-      backgroundPresetId: "ink",
-      layers: [initialLayer],
-      musicTracks: [],
-    },
-  ],
-};
+const initialProject = makeBlankProject();
 
 type EditorStore = {
   project: Project;
@@ -105,6 +97,7 @@ type EditorStore = {
   selectedLayerId: string | null;
   selectedComponentId: string | null;
   selectedMusicTrackId: string | null;
+  startBlankProject: (width: number, height: number) => void;
   setCanvasSize: (width: number, height: number) => void;
   setHeadline: (content: string) => void;
   setMotionPreset: (presetId: MotionPresetId) => void;
@@ -135,23 +128,21 @@ function updateSelectedText(
   updater: (component: TextComponent) => TextComponent,
 ): Project {
   if (!selectedComponentId) return project;
+  const scene = project.scenes[0];
   return {
     ...project,
-    scenes: project.scenes.map((scene, sceneIndex) =>
-      sceneIndex === 0
-        ? {
-            ...scene,
-            layers: scene.layers.map((layer) => ({
-              ...layer,
-              components: layer.components.map((component) =>
-                component.id === selectedComponentId && component.type === "text"
-                  ? updater(component)
-                  : component,
-              ),
-            })),
-          }
-        : scene,
-    ),
+    scenes: [
+      {
+        ...scene,
+        layers: scene.layers.map((layer) => ({
+          ...layer,
+          components: layer.components.map((component) =>
+            component.id === selectedComponentId && component.type === "text" ? updater(component) : component,
+          ),
+        })),
+      },
+      ...project.scenes.slice(1),
+    ],
   };
 }
 
@@ -161,9 +152,21 @@ export const useEditorStore = create<EditorStore>((set) => ({
   currentTime: 0,
   isPlaying: false,
   activeSceneIndex: 0,
-  selectedLayerId: initialLayer.id,
-  selectedComponentId: initialText.id,
+  selectedLayerId: null,
+  selectedComponentId: null,
   selectedMusicTrackId: null,
+
+  startBlankProject: (width, height) =>
+    set((state) => ({
+      project: makeBlankProject(width, height),
+      currentTime: 0,
+      isPlaying: false,
+      activeSceneIndex: 0,
+      selectedLayerId: null,
+      selectedComponentId: null,
+      selectedMusicTrackId: null,
+      replayKey: state.replayKey + 1,
+    })),
 
   setCanvasSize: (width, height) =>
     set((state) => ({
@@ -174,9 +177,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
     })),
 
   setHeadline: (content) =>
-    set((state) => ({
-      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, content })),
-    })),
+    set((state) => ({ project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, content })) })),
 
   setMotionPreset: (motionPresetId) =>
     set((state) => ({
@@ -186,46 +187,30 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   setMotionDuration: (duration) =>
     set((state) => ({
-      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
-        ...component,
-        motionSettings: { ...component.motionSettings, duration },
-      })),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, motionSettings: { ...component.motionSettings, duration } })),
       replayKey: state.replayKey + 1,
     })),
 
   setMotionStagger: (stagger) =>
     set((state) => ({
-      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
-        ...component,
-        motionSettings: { ...component.motionSettings, stagger },
-      })),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, motionSettings: { ...component.motionSettings, stagger } })),
       replayKey: state.replayKey + 1,
     })),
 
   setSplitBy: (splitBy) =>
     set((state) => ({
-      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
-        ...component,
-        motionSettings: { ...component.motionSettings, splitBy },
-      })),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, motionSettings: { ...component.motionSettings, splitBy } })),
       replayKey: state.replayKey + 1,
     })),
 
   setBackgroundPreset: (backgroundPresetId) =>
-    set((state) => ({
-      project: {
-        ...state.project,
-        scenes: state.project.scenes.map((scene, index) =>
-          index === 0 ? { ...scene, backgroundPresetId } : scene,
-        ),
-      },
-    })),
+    set((state) => {
+      const scene = state.project.scenes[0];
+      return { project: { ...state.project, scenes: [{ ...scene, backgroundPresetId }, ...state.project.scenes.slice(1)] } };
+    }),
 
   setCurrentTime: (time) =>
-    set((state) => {
-      const duration = state.project.scenes[0].durationInSeconds;
-      return { currentTime: Math.min(duration, Math.max(0, time)) };
-    }),
+    set((state) => ({ currentTime: Math.min(state.project.scenes[0].durationInSeconds, Math.max(0, time)) })),
 
   setPlaying: (isPlaying) => set({ isPlaying }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -235,16 +220,9 @@ export const useEditorStore = create<EditorStore>((set) => ({
     set((state) => {
       const scene = state.project.scenes[0];
       const component = makeComponent(type, scene.layers.length);
-      const layer: Layer = {
-        id: id("layer"),
-        name: `Layer ${scene.layers.length + 1}`,
-        components: [component],
-      };
+      const layer: Layer = { id: id("layer"), name: `Layer ${scene.layers.length + 1}`, components: [component] };
       return {
-        project: {
-          ...state.project,
-          scenes: [{ ...scene, layers: [...scene.layers, layer] }, ...state.project.scenes.slice(1)],
-        },
+        project: { ...state.project, scenes: [{ ...scene, layers: [...scene.layers, layer] }, ...state.project.scenes.slice(1)] },
         selectedLayerId: layer.id,
         selectedComponentId: component.id,
         selectedMusicTrackId: null,
@@ -255,21 +233,24 @@ export const useEditorStore = create<EditorStore>((set) => ({
   addComponentToSelectedLayer: (type) =>
     set((state) => {
       const scene = state.project.scenes[0];
-      const layerId = state.selectedLayerId ?? scene.layers[0].id;
-      const target = scene.layers.find((layer) => layer.id === layerId) ?? scene.layers[0];
+      if (scene.layers.length === 0) {
+        const component = makeComponent(type, 0);
+        const layer: Layer = { id: id("layer"), name: "Layer 1", components: [component] };
+        return {
+          project: { ...state.project, scenes: [{ ...scene, layers: [layer] }, ...state.project.scenes.slice(1)] },
+          selectedLayerId: layer.id,
+          selectedComponentId: component.id,
+          selectedMusicTrackId: null,
+          replayKey: state.replayKey + 1,
+        };
+      }
+
+      const target = scene.layers.find((layer) => layer.id === state.selectedLayerId) ?? scene.layers[0];
       const component = makeComponent(type, target.components.length);
       return {
         project: {
           ...state.project,
-          scenes: [
-            {
-              ...scene,
-              layers: scene.layers.map((layer) =>
-                layer.id === target.id ? { ...layer, components: [...layer.components, component] } : layer,
-              ),
-            },
-            ...state.project.scenes.slice(1),
-          ],
+          scenes: [{ ...scene, layers: scene.layers.map((layer) => layer.id === target.id ? { ...layer, components: [...layer.components, component] } : layer) }, ...state.project.scenes.slice(1)],
         },
         selectedLayerId: target.id,
         selectedComponentId: component.id,
@@ -281,20 +262,9 @@ export const useEditorStore = create<EditorStore>((set) => ({
   addMusicTrack: () =>
     set((state) => {
       const scene = state.project.scenes[0];
-      const track: MusicTrack = {
-        id: id("music"),
-        name: `Music ${scene.musicTracks.length + 1}`,
-        src: null,
-        startTime: 0,
-        duration: scene.durationInSeconds,
-        volume: 0.8,
-        loop: false,
-      };
+      const track: MusicTrack = { id: id("music"), name: `Music ${scene.musicTracks.length + 1}`, src: null, startTime: 0, duration: scene.durationInSeconds, volume: 0.8, loop: false };
       return {
-        project: {
-          ...state.project,
-          scenes: [{ ...scene, musicTracks: [...scene.musicTracks, track] }, ...state.project.scenes.slice(1)],
-        },
+        project: { ...state.project, scenes: [{ ...scene, musicTracks: [...scene.musicTracks, track] }, ...state.project.scenes.slice(1)] },
         selectedMusicTrackId: track.id,
         selectedComponentId: null,
       };
@@ -304,34 +274,20 @@ export const useEditorStore = create<EditorStore>((set) => ({
     set((state) => {
       if (!state.selectedComponentId) return state;
       const scene = state.project.scenes[0];
-      let nextSelected: string | null = null;
       const layers = scene.layers
-        .map((layer) => ({
-          ...layer,
-          components: layer.components.filter((component) => component.id !== state.selectedComponentId),
-        }))
+        .map((layer) => ({ ...layer, components: layer.components.filter((component) => component.id !== state.selectedComponentId) }))
         .filter((layer) => layer.components.length > 0);
-      const safeLayers = layers.length ? layers : [{ id: id("layer"), name: "Layer 1", components: [makeTextComponent(0)] }];
-      nextSelected = safeLayers[0].components[0]?.id ?? null;
+      const firstLayer = layers[0] ?? null;
       return {
-        project: {
-          ...state.project,
-          scenes: [{ ...scene, layers: safeLayers }, ...state.project.scenes.slice(1)],
-        },
-        selectedLayerId: safeLayers[0].id,
-        selectedComponentId: nextSelected,
+        project: { ...state.project, scenes: [{ ...scene, layers }, ...state.project.scenes.slice(1)] },
+        selectedLayerId: firstLayer?.id ?? null,
+        selectedComponentId: firstLayer?.components[0]?.id ?? null,
       };
     }),
 
   setSelectedLayer: (selectedLayerId) => set({ selectedLayerId, selectedMusicTrackId: null }),
-  setSelectedComponent: (selectedComponentId, layerId) =>
-    set((state) => ({
-      selectedComponentId,
-      selectedLayerId: layerId ?? state.selectedLayerId,
-      selectedMusicTrackId: null,
-    })),
-  setSelectedMusicTrack: (selectedMusicTrackId) =>
-    set({ selectedMusicTrackId, selectedComponentId: null }),
+  setSelectedComponent: (selectedComponentId, layerId) => set((state) => ({ selectedComponentId, selectedLayerId: layerId ?? state.selectedLayerId, selectedMusicTrackId: null })),
+  setSelectedMusicTrack: (selectedMusicTrackId) => set({ selectedMusicTrackId, selectedComponentId: null }),
 
   setComponentTiming: (componentId, startTime, duration) =>
     set((state) => {
@@ -341,18 +297,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
       return {
         project: {
           ...state.project,
-          scenes: [
-            {
-              ...scene,
-              layers: scene.layers.map((layer) => ({
-                ...layer,
-                components: layer.components.map((component) =>
-                  component.id === componentId ? { ...component, startTime: safeStart, duration: safeDuration } : component,
-                ),
-              })),
-            },
-            ...state.project.scenes.slice(1),
-          ],
+          scenes: [{ ...scene, layers: scene.layers.map((layer) => ({ ...layer, components: layer.components.map((component) => component.id === componentId ? { ...component, startTime: safeStart, duration: safeDuration } : component) })) }, ...state.project.scenes.slice(1)],
         },
       };
     }),
@@ -362,20 +307,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
       const scene = state.project.scenes[0];
       const safeStart = Math.min(Math.max(0, startTime), Math.max(0, scene.durationInSeconds - 0.1));
       const safeDuration = Math.min(Math.max(0.1, duration), scene.durationInSeconds - safeStart);
-      return {
-        project: {
-          ...state.project,
-          scenes: [
-            {
-              ...scene,
-              musicTracks: scene.musicTracks.map((track) =>
-                track.id === trackId ? { ...track, startTime: safeStart, duration: safeDuration } : track,
-              ),
-            },
-            ...state.project.scenes.slice(1),
-          ],
-        },
-      };
+      return { project: { ...state.project, scenes: [{ ...scene, musicTracks: scene.musicTracks.map((track) => track.id === trackId ? { ...track, startTime: safeStart, duration: safeDuration } : track) }, ...state.project.scenes.slice(1)] } };
     }),
 
   setSceneDuration: (duration) =>
@@ -387,18 +319,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
         return { ...item, startTime, duration: Math.min(item.duration, Math.max(0.1, safeDuration - startTime)) };
       };
       return {
-        project: {
-          ...state.project,
-          scenes: [
-            {
-              ...scene,
-              durationInSeconds: safeDuration,
-              layers: scene.layers.map((layer) => ({ ...layer, components: layer.components.map(clampTimed) })),
-              musicTracks: scene.musicTracks.map(clampTimed),
-            },
-            ...state.project.scenes.slice(1),
-          ],
-        },
+        project: { ...state.project, scenes: [{ ...scene, durationInSeconds: safeDuration, layers: scene.layers.map((layer) => ({ ...layer, components: layer.components.map(clampTimed) })), musicTracks: scene.musicTracks.map(clampTimed) }, ...state.project.scenes.slice(1)] },
         currentTime: Math.min(state.currentTime, safeDuration),
       };
     }),
