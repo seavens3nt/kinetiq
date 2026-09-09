@@ -27,11 +27,6 @@ export function MotionPlayground() {
     setCurrentTime,
     setPlaying,
     togglePlayback,
-    setActiveScene,
-    addScene,
-    duplicateScene,
-    deleteScene,
-    addTextElement,
     deleteSelectedElement,
     setSelectedElement,
     replay,
@@ -78,6 +73,7 @@ export function MotionPlayground() {
         togglePlayback();
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlayback]);
@@ -94,7 +90,7 @@ export function MotionPlayground() {
   const activeReplayKey = replayKey + previewKey;
 
   return (
-    <main className="min-h-screen bg-[#111216] text-white">
+    <main className="flex min-h-screen flex-col bg-[#111216] text-white">
       <header className="flex min-h-16 items-center justify-between border-b border-white/10 px-5 py-3 lg:px-8">
         <div className="flex items-center gap-3">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#d7ff45] font-black text-black">K</div>
@@ -103,9 +99,10 @@ export function MotionPlayground() {
             <div className="text-xs text-white/40">Motion Studio</div>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs tabular-nums text-white/55 sm:block">
-            {currentTime.toFixed(2)}s / {scene.durationInSeconds.toFixed(2)}s
+            {scene.name} · {currentTime.toFixed(2)}s / {scene.durationInSeconds.toFixed(2)}s
           </div>
           <button
             onClick={togglePlayback}
@@ -122,79 +119,9 @@ export function MotionPlayground() {
         </div>
       </header>
 
-      <div className="border-b border-white/10 bg-[#0f1014] px-4 py-3">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {project.scenes.map((item, index) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveScene(index)}
-              className={`min-w-[132px] rounded-xl border px-3 py-2 text-left transition ${
-                activeSceneIndex === index
-                  ? "border-[#d7ff45] bg-[#d7ff45]/10"
-                  : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
-              }`}
-            >
-              <div className="text-xs font-semibold">{item.name}</div>
-              <div className="mt-1 text-[11px] text-white/35">
-                {item.durationInSeconds.toFixed(1)}s · {item.elements.length} layer{item.elements.length === 1 ? "" : "s"}
-              </div>
-            </button>
-          ))}
-          <button
-            onClick={addScene}
-            className="min-w-[110px] rounded-xl border border-dashed border-white/15 px-3 py-2 text-left text-xs text-white/50 transition hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
-          >
-            + Add scene
-          </button>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <button onClick={duplicateScene} className="text-xs text-white/45 hover:text-white">Duplicate scene</button>
-          <span className="text-white/15">·</span>
-          <button
-            onClick={deleteScene}
-            disabled={project.scenes.length === 1}
-            className="text-xs text-white/45 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-25"
-          >
-            Delete scene
-          </button>
-        </div>
-      </div>
-
-      <div className="flex min-h-[calc(100vh-8.75rem)] flex-col">
-        <section className="grid min-h-0 flex-1 lg:grid-cols-[290px_1fr_320px]">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <section className="grid min-h-0 flex-1 lg:grid-cols-[260px_1fr_320px]">
           <aside className="overflow-y-auto border-r border-white/10 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Layers</p>
-                <p className="mt-1 text-xs text-white/30">Select a text layer to edit it.</p>
-              </div>
-              <button
-                onClick={addTextElement}
-                className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-white/65 hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
-              >
-                + Text
-              </button>
-            </div>
-
-            <div className="mb-6 space-y-2">
-              {scene.elements.map((element) => (
-                <button
-                  key={element.id}
-                  onClick={() => setSelectedElement(element.id)}
-                  className={`w-full rounded-xl border p-3 text-left ${
-                    selectedElementId === element.id
-                      ? "border-[#d7ff45] bg-[#d7ff45]/10"
-                      : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <div className="truncate text-sm font-semibold">{element.content}</div>
-                  <div className="mt-1 text-xs text-white/35">
-                    {element.startTime.toFixed(2)}s → {(element.startTime + element.duration).toFixed(2)}s
-                  </div>
-                </button>
-              ))}
-            </div>
-
             <div className="mb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Text animations</p>
               <p className="mt-1 text-xs text-white/30">Hover to preview · click to apply</p>
@@ -246,7 +173,7 @@ export function MotionPlayground() {
 
           <div className="flex min-h-[420px] items-center justify-center overflow-hidden bg-[#17181d] p-6 lg:p-10">
             <div
-              className={`relative aspect-[9/16] h-[58vh] max-h-[680px] min-h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl ${background.className}`}
+              className={`relative aspect-[9/16] h-[56vh] max-h-[650px] min-h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl ${background.className}`}
             >
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
               <div className="relative h-full w-full text-[#f7f7f4]">
@@ -259,6 +186,7 @@ export function MotionPlayground() {
                 {visibleElements.map((element, index) => {
                   const isSelected = selectedElementId === element.id;
                   const localReplayKey = activeReplayKey + Math.round(element.startTime * 100) + index;
+
                   return (
                     <button
                       key={element.id}
@@ -267,7 +195,9 @@ export function MotionPlayground() {
                       className={`absolute left-1/2 top-1/2 flex w-[82%] -translate-x-1/2 items-center justify-center rounded-2xl px-4 py-2 outline-none ${
                         isSelected ? "ring-2 ring-[#d7ff45]/70" : ""
                       }`}
-                      style={{ transform: `translate(-50%, calc(-50% + ${index * 110 - (visibleElements.length - 1) * 55}px))` }}
+                      style={{
+                        transform: `translate(-50%, calc(-50% + ${index * 110 - (visibleElements.length - 1) * 55}px))`,
+                      }}
                     >
                       <AnimatedText
                         text={element.content}
@@ -284,15 +214,15 @@ export function MotionPlayground() {
 
           <aside className="overflow-y-auto border-l border-white/10 p-5">
             <div className="space-y-7">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">Selected text</div>
-                  <div className="text-xs text-white/35">{selectedElement.content}</div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">Selected layer</div>
+                  <div className="truncate text-xs text-white/35">{selectedElement.content}</div>
                 </div>
                 <button
                   onClick={deleteSelectedElement}
                   disabled={scene.elements.length === 1}
-                  className="text-xs text-white/35 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-20"
+                  className="shrink-0 text-xs text-white/35 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-20"
                 >
                   Delete
                 </button>
