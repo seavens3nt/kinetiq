@@ -18,7 +18,6 @@ export function MotionPlayground() {
     replayKey,
     currentTime,
     isPlaying,
-    activeSceneIndex,
     selectedElementId,
     setCanvasSize,
     setHeadline,
@@ -34,10 +33,10 @@ export function MotionPlayground() {
     setSelectedElement,
   } = useEditorStore();
 
-  const scene = project.scenes[activeSceneIndex];
+  const timeline = project.scenes[0];
   const selectedElement =
-    scene.elements.find((element) => element.id === selectedElementId) ?? scene.elements[0];
-  const background = backgroundPresets.find((item) => item.id === scene.backgroundPresetId)!;
+    timeline.elements.find((element) => element.id === selectedElementId) ?? timeline.elements[0];
+  const background = backgroundPresets.find((item) => item.id === timeline.backgroundPresetId)!;
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -49,11 +48,11 @@ export function MotionPlayground() {
       const deltaSeconds = (now - previous) / 1000;
       previous = now;
       const state = useEditorStore.getState();
-      const activeScene = state.project.scenes[state.activeSceneIndex];
+      const masterTimeline = state.project.scenes[0];
       const nextTime = state.currentTime + deltaSeconds;
 
-      if (nextTime >= activeScene.durationInSeconds) {
-        state.setCurrentTime(activeScene.durationInSeconds);
+      if (nextTime >= masterTimeline.durationInSeconds) {
+        state.setCurrentTime(masterTimeline.durationInSeconds);
         state.setPlaying(false);
         return;
       }
@@ -82,10 +81,10 @@ export function MotionPlayground() {
 
   const visibleElements = useMemo(
     () =>
-      scene.elements.filter(
+      timeline.elements.filter(
         (element) => currentTime >= element.startTime && currentTime <= element.startTime + element.duration,
       ),
-    [scene.elements, currentTime],
+    [timeline.elements, currentTime],
   );
 
   const activePresetId = previewPresetId ?? selectedElement.motionPresetId;
@@ -104,10 +103,10 @@ export function MotionPlayground() {
   }
 
   return (
-    <main className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#111216] text-white">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-4 lg:px-6">
+    <main className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#0B0B0F] text-[#F7F7F4]">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-[#101015] px-4 lg:px-6">
         <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#d7ff45] font-black text-black">K</div>
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#D7FF45] font-black text-[#0B0B0F]">K</div>
           <div>
             <div className="text-sm font-semibold tracking-tight">Kinetiq</div>
             <div className="text-[10px] text-white/40">Motion Studio</div>
@@ -118,12 +117,12 @@ export function MotionPlayground() {
           <button
             type="button"
             onClick={() => setHasStarted(false)}
-            className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] text-white/45 transition hover:bg-white/[0.04] hover:text-white"
+            className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/45 transition hover:border-[#8067FF]/40 hover:text-white"
           >
-            {project.width}:{project.height === project.width ? project.width : project.height}
+            {project.width} × {project.height}
           </button>
-          <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] text-white/45">
-            {scene.name} · {scene.elements.length} layer{scene.elements.length === 1 ? "" : "s"}
+          <div className="rounded-full border border-[#8067FF]/25 bg-[#8067FF]/10 px-3 py-1.5 text-[11px] text-[#C7BEFF]">
+            Master timeline · {timeline.elements.length} layer{timeline.elements.length === 1 ? "" : "s"}
           </div>
         </div>
       </header>
@@ -153,14 +152,14 @@ export function MotionPlayground() {
                   onClick={() => setMotionPreset(preset.id)}
                   className={`group w-full rounded-lg border p-2.5 text-left transition ${
                     selectedElement.motionPresetId === preset.id
-                      ? "border-[#d7ff45] bg-[#d7ff45]/10"
-                      : "border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.055]"
+                      ? "border-[#D7FF45] bg-[#D7FF45]/10"
+                      : "border-white/10 bg-white/[0.025] hover:border-[#8067FF]/40 hover:bg-[#8067FF]/10"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-xs font-semibold">{preset.name}</div>
                     {preset.engine === "react-bits-adapter" && (
-                      <span className="rounded-full bg-[#8067ff]/15 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-[#a999ff]">
+                      <span className="rounded-full bg-[#8067FF]/15 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-[#A999FF]">
                         React Bits
                       </span>
                     )}
@@ -188,7 +187,7 @@ export function MotionPlayground() {
               style={{ aspectRatio: `${project.width} / ${project.height}` }}
             >
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
-              <div className="relative h-full w-full text-[#f7f7f4]">
+              <div className="relative h-full w-full text-[#F7F7F4]">
                 {visibleElements.length === 0 && (
                   <div className="absolute inset-0 grid place-items-center px-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-white/20">
                     Scrub into a clip or press Play
@@ -205,7 +204,7 @@ export function MotionPlayground() {
                       type="button"
                       onClick={() => setSelectedElement(element.id)}
                       className={`absolute left-1/2 top-1/2 flex w-[82%] -translate-x-1/2 items-center justify-center rounded-2xl px-4 py-2 outline-none ${
-                        isSelected ? "ring-2 ring-[#d7ff45]/70" : ""
+                        isSelected ? "ring-2 ring-[#D7FF45]/70" : ""
                       }`}
                       style={{
                         transform: `translate(-50%, calc(-50% + ${index * 90 - (visibleElements.length - 1) * 45}px))`,
@@ -233,7 +232,7 @@ export function MotionPlayground() {
                 </div>
                 <button
                   onClick={deleteSelectedElement}
-                  disabled={scene.elements.length === 1}
+                  disabled={timeline.elements.length === 1}
                   className="shrink-0 text-[10px] text-white/35 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-20"
                 >
                   Delete
@@ -246,7 +245,7 @@ export function MotionPlayground() {
                   value={selectedElement.content}
                   onChange={(event) => setHeadline(event.target.value)}
                   rows={3}
-                  className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] p-2.5 text-xs outline-none transition focus:border-[#d7ff45]/70"
+                  className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] p-2.5 text-xs outline-none transition focus:border-[#D7FF45]/70"
                 />
               </div>
 
@@ -265,7 +264,7 @@ export function MotionPlayground() {
                       step="0.05"
                       value={selectedElement.motionSettings.duration}
                       onChange={(event) => setMotionDuration(Number(event.target.value))}
-                      className="w-full accent-[#d7ff45]"
+                      className="w-full accent-[#D7FF45]"
                     />
                   </div>
 
@@ -281,7 +280,7 @@ export function MotionPlayground() {
                       step="0.01"
                       value={selectedElement.motionSettings.stagger}
                       onChange={(event) => setMotionStagger(Number(event.target.value))}
-                      className="w-full accent-[#d7ff45]"
+                      className="w-full accent-[#D7FF45]"
                     />
                   </div>
 
@@ -294,8 +293,8 @@ export function MotionPlayground() {
                           onClick={() => setSplitBy(value)}
                           className={`rounded-md border px-2 py-1.5 text-[10px] capitalize transition ${
                             selectedElement.motionSettings.splitBy === value
-                              ? "border-[#d7ff45] bg-[#d7ff45]/10 text-[#d7ff45]"
-                              : "border-white/10 text-white/55 hover:bg-white/[0.04]"
+                              ? "border-[#D7FF45] bg-[#D7FF45]/10 text-[#D7FF45]"
+                              : "border-white/10 text-white/55 hover:border-[#8067FF]/40 hover:bg-[#8067FF]/10"
                           }`}
                         >
                           {value}
@@ -314,7 +313,7 @@ export function MotionPlayground() {
                       key={preset.id}
                       onClick={() => setBackgroundPreset(preset.id)}
                       className={`rounded-lg border p-1.5 text-left ${
-                        scene.backgroundPresetId === preset.id ? "border-[#d7ff45]" : "border-white/10"
+                        timeline.backgroundPresetId === preset.id ? "border-[#D7FF45]" : "border-white/10"
                       }`}
                     >
                       <div className={`mb-1.5 h-10 rounded-md ${preset.className}`} />
