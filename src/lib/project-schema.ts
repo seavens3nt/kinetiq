@@ -24,6 +24,21 @@ export const BackgroundPresetIdSchema = z.enum([
   "violet-mesh",
 ]);
 
+export const TransitionTypeSchema = z.enum(["none", "fade", "dissolve", "slide", "zoom"]);
+export const TransitionSchema = z.object({
+  type: TransitionTypeSchema,
+  duration: z.number().min(0).max(2),
+});
+
+export const TransformKeyframeSchema = z.object({
+  id: z.string(),
+  time: z.number().min(0),
+  x: z.number(),
+  y: z.number(),
+  scale: z.number().positive(),
+  opacity: z.number().min(0).max(1),
+});
+
 const TimedComponentSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -33,6 +48,9 @@ const TimedComponentSchema = z.object({
   y: z.number(),
   width: z.number().positive(),
   height: z.number().positive(),
+  transitionIn: TransitionSchema,
+  transitionOut: TransitionSchema,
+  keyframes: z.array(TransformKeyframeSchema),
 });
 
 export const TextComponentSchema = TimedComponentSchema.extend({
@@ -55,6 +73,7 @@ export const VideoComponentSchema = TimedComponentSchema.extend({
   type: z.literal("video"),
   src: z.string().nullable(),
   muted: z.boolean(),
+  playbackRate: z.number().min(0.25).max(4),
 });
 
 export const ShapeComponentSchema = TimedComponentSchema.extend({
@@ -128,6 +147,9 @@ export type MotionPresetId = z.infer<typeof MotionPresetIdSchema>;
 export type SplitBy = z.infer<typeof SplitBySchema>;
 export type MotionSettings = z.infer<typeof MotionSettingsSchema>;
 export type BackgroundPresetId = z.infer<typeof BackgroundPresetIdSchema>;
+export type TransitionType = z.infer<typeof TransitionTypeSchema>;
+export type Transition = z.infer<typeof TransitionSchema>;
+export type TransformKeyframe = z.infer<typeof TransformKeyframeSchema>;
 export type TextComponent = z.infer<typeof TextComponentSchema>;
 export type ImageComponent = z.infer<typeof ImageComponentSchema>;
 export type VideoComponent = z.infer<typeof VideoComponentSchema>;
