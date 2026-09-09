@@ -48,9 +48,9 @@ const TimedComponentSchema = z.object({
   y: z.number(),
   width: z.number().positive(),
   height: z.number().positive(),
-  transitionIn: TransitionSchema,
-  transitionOut: TransitionSchema,
-  keyframes: z.array(TransformKeyframeSchema),
+  transitionIn: TransitionSchema.optional(),
+  transitionOut: TransitionSchema.optional(),
+  keyframes: z.array(TransformKeyframeSchema).optional(),
 });
 
 export const TextComponentSchema = TimedComponentSchema.extend({
@@ -73,7 +73,7 @@ export const VideoComponentSchema = TimedComponentSchema.extend({
   type: z.literal("video"),
   src: z.string().nullable(),
   muted: z.boolean(),
-  playbackRate: z.number().min(0.25).max(4),
+  playbackRate: z.number().min(0.25).max(4).optional(),
 });
 
 export const ShapeComponentSchema = TimedComponentSchema.extend({
