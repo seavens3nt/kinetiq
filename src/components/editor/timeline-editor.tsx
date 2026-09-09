@@ -13,15 +13,18 @@ export function TimelineEditor() {
   const timelineRef = useRef<HTMLDivElement>(null);
   const {
     project,
+    activeSceneIndex,
     currentTime,
+    isPlaying,
     selectedElementId,
     setCurrentTime,
+    togglePlayback,
     setSelectedElement,
     setElementTiming,
     setSceneDuration,
   } = useEditorStore();
 
-  const scene = project.scenes[0];
+  const scene = project.scenes[activeSceneIndex];
   const duration = scene.durationInSeconds;
 
   const ticks = useMemo(() => {
@@ -96,22 +99,36 @@ export function TimelineEditor() {
   return (
     <section className="border-t border-white/10 bg-[#0d0e12] text-white">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <div>
-          <div className="text-sm font-semibold">Timeline</div>
-          <div className="text-xs text-white/35">Drag clips to time them. Resize the edges to change duration.</div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlayback}
+            className="grid h-8 w-8 place-items-center rounded-full bg-[#d7ff45] text-xs font-black text-black"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? "Ⅱ" : "▶"}
+          </button>
+          <div>
+            <div className="text-sm font-semibold">Timeline · {scene.name}</div>
+            <div className="text-xs text-white/35">Scrub, drag clips, and resize their edges.</div>
+          </div>
         </div>
-        <label className="flex items-center gap-2 text-xs text-white/50">
-          Scene length
-          <input
-            type="number"
-            min="1"
-            step="0.5"
-            value={duration}
-            onChange={(event) => setSceneDuration(Number(event.target.value) || 1)}
-            className="w-16 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-white outline-none"
-          />
-          s
-        </label>
+        <div className="flex items-center gap-4">
+          <div className="text-xs tabular-nums text-white/45">
+            {currentTime.toFixed(2)}s / {duration.toFixed(2)}s
+          </div>
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            Scene length
+            <input
+              type="number"
+              min="1"
+              step="0.5"
+              value={duration}
+              onChange={(event) => setSceneDuration(Number(event.target.value) || 1)}
+              className="w-16 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-white outline-none"
+            />
+            s
+          </label>
+        </div>
       </div>
 
       <div
@@ -159,7 +176,7 @@ export function TimelineEditor() {
                 }}
                 className={`px-3 py-3 text-left text-xs ${isSelected ? "text-[#d7ff45]" : "text-white/55"}`}
               >
-                {element.type === "text" ? "Text" : element.type}
+                Text
               </button>
               <div className="relative h-12 bg-white/[0.01]">
                 <div
