@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatedText } from "@/components/editor/animated-text";
+import { ProjectStartScreen } from "@/components/editor/project-start-screen";
 import { TimelineEditor } from "@/components/editor/timeline-editor";
 import { backgroundPresets, motionPresets } from "@/lib/presets";
 import type { MotionPresetId } from "@/lib/project-schema";
@@ -10,6 +11,7 @@ import { useEditorStore } from "@/store/editor-store";
 export function MotionPlayground() {
   const [previewPresetId, setPreviewPresetId] = useState<MotionPresetId | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const {
     project,
@@ -18,6 +20,7 @@ export function MotionPlayground() {
     isPlaying,
     activeSceneIndex,
     selectedElementId,
+    setCanvasSize,
     setHeadline,
     setMotionPreset,
     setMotionDuration,
@@ -67,7 +70,7 @@ export function MotionPlayground() {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
-      if (event.code === "Space") {
+      if (event.code === "Space" && hasStarted) {
         event.preventDefault();
         togglePlayback();
       }
@@ -75,7 +78,7 @@ export function MotionPlayground() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlayback]);
+  }, [togglePlayback, hasStarted]);
 
   const visibleElements = useMemo(
     () =>
@@ -87,6 +90,18 @@ export function MotionPlayground() {
 
   const activePresetId = previewPresetId ?? selectedElement.motionPresetId;
   const activeReplayKey = replayKey + previewKey;
+  const isLandscape = project.width > project.height;
+
+  if (!hasStarted) {
+    return (
+      <ProjectStartScreen
+        onStart={(width, height) => {
+          setCanvasSize(width, height);
+          setHasStarted(true);
+        }}
+      />
+    );
+  }
 
   return (
     <main className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#111216] text-white">
@@ -99,8 +114,17 @@ export function MotionPlayground() {
           </div>
         </div>
 
-        <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] text-white/45">
-          {scene.name} · {scene.elements.length} layer{scene.elements.length === 1 ? "" : "s"}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setHasStarted(false)}
+            className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] text-white/45 transition hover:bg-white/[0.04] hover:text-white"
+          >
+            {project.width}:{project.height === project.width ? project.width : project.height}
+          </button>
+          <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] text-white/45">
+            {scene.name} · {scene.elements.length} layer{scene.elements.length === 1 ? "" : "s"}
+          </div>
         </div>
       </header>
 
@@ -158,7 +182,10 @@ export function MotionPlayground() {
 
           <div className="flex min-h-0 items-center justify-center overflow-hidden bg-[#17181d] p-3 lg:p-5">
             <div
-              className={`relative aspect-[9/16] h-[min(100%,620px)] max-h-full min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className}`}
+              className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className} ${
+                isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"
+              }`}
+              style={{ aspectRatio: `${project.width} / ${project.height}` }}
             >
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
               <div className="relative h-full w-full text-[#f7f7f4]">
