@@ -66,6 +66,7 @@ type EditorStore = {
   isPlaying: boolean;
   activeSceneIndex: number;
   selectedElementId: string | null;
+  setCanvasSize: (width: number, height: number) => void;
   setHeadline: (content: string) => void;
   setMotionPreset: (presetId: MotionPresetId) => void;
   setMotionDuration: (duration: number) => void;
@@ -116,6 +117,14 @@ export const useEditorStore = create<EditorStore>((set) => ({
   isPlaying: false,
   activeSceneIndex: 0,
   selectedElementId: "headline-1",
+
+  setCanvasSize: (width, height) =>
+    set((state) => ({
+      project: { ...state.project, width, height },
+      currentTime: 0,
+      isPlaying: false,
+      replayKey: state.replayKey + 1,
+    })),
 
   setHeadline: (content) =>
     set((state) => ({
