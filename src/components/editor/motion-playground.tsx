@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatedText } from "@/components/editor/animated-text";
 import { TimelineEditor } from "@/components/editor/timeline-editor";
 import { backgroundPresets, motionPresets } from "@/lib/presets";
@@ -15,6 +15,8 @@ export function MotionPlayground() {
     project,
     replayKey,
     currentTime,
+    isPlaying,
+    activeSceneIndex,
     selectedElementId,
     setHeadline,
     setMotionPreset,
@@ -22,32 +24,95 @@ export function MotionPlayground() {
     setMotionStagger,
     setSplitBy,
     setBackgroundPreset,
+    setCurrentTime,
+    setPlaying,
+    togglePlayback,
+    setActiveScene,
+    addScene,
+    duplicateScene,
+    deleteScene,
+    addTextElement,
+    deleteSelectedElement,
     setSelectedElement,
     replay,
   } = useEditorStore();
 
-  const scene = project.scenes[0];
-  const headline = scene.elements[0];
+  const scene = project.scenes[activeSceneIndex];
+  const selectedElement =
+    scene.elements.find((element) => element.id === selectedElementId) ?? scene.elements[0];
   const background = backgroundPresets.find((item) => item.id === scene.backgroundPresetId)!;
-  const activePresetId = previewPresetId ?? headline.motionPresetId;
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let previous = performance.now();
+    let frame = 0;
+
+    const step = (now: number) => {
+      const deltaSeconds = (now - previous) / 1000;
+      previous = now;
+      const state = useEditorStore.getState();
+      const activeScene = state.project.scenes[state.activeSceneIndex];
+      const nextTime = state.currentTime + deltaSeconds;
+
+      if (nextTime >= activeScene.durationInSeconds) {
+        state.setCurrentTime(activeScene.durationInSeconds);
+        state.setPlaying(false);
+        return;
+      }
+
+      state.setCurrentTime(nextTime);
+      frame = requestAnimationFrame(step);
+    };
+
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [isPlaying, setCurrentTime, setPlaying]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        togglePlayback();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [togglePlayback]);
+
+  const visibleElements = useMemo(
+    () =>
+      scene.elements.filter(
+        (element) => currentTime >= element.startTime && currentTime <= element.startTime + element.duration,
+      ),
+    [scene.elements, currentTime],
+  );
+
+  const activePresetId = previewPresetId ?? selectedElement.motionPresetId;
   const activeReplayKey = replayKey + previewKey;
-  const headlineVisible =
-    currentTime >= headline.startTime && currentTime <= headline.startTime + headline.duration;
 
   return (
     <main className="min-h-screen bg-[#111216] text-white">
-      <header className="flex h-16 items-center justify-between border-b border-white/10 px-5 lg:px-8">
+      <header className="flex min-h-16 items-center justify-between border-b border-white/10 px-5 py-3 lg:px-8">
         <div className="flex items-center gap-3">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#d7ff45] font-black text-black">K</div>
           <div>
             <div className="font-semibold tracking-tight">Kinetiq</div>
-            <div className="text-xs text-white/40">Motion Playground</div>
+            <div className="text-xs text-white/40">Motion Studio</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/55">
+        <div className="flex items-center gap-2">
+          <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs tabular-nums text-white/55 sm:block">
             {currentTime.toFixed(2)}s / {scene.durationInSeconds.toFixed(2)}s
           </div>
+          <button
+            onClick={togglePlayback}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold transition hover:bg-white/[0.08]"
+          >
+            {isPlaying ? "Pause" : "Play"}
+          </button>
           <button
             onClick={replay}
             className="rounded-full bg-[#d7ff45] px-4 py-2 text-sm font-semibold text-black transition hover:scale-[1.02]"
@@ -57,9 +122,79 @@ export function MotionPlayground() {
         </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+      <div className="border-b border-white/10 bg-[#0f1014] px-4 py-3">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {project.scenes.map((item, index) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveScene(index)}
+              className={`min-w-[132px] rounded-xl border px-3 py-2 text-left transition ${
+                activeSceneIndex === index
+                  ? "border-[#d7ff45] bg-[#d7ff45]/10"
+                  : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
+              }`}
+            >
+              <div className="text-xs font-semibold">{item.name}</div>
+              <div className="mt-1 text-[11px] text-white/35">
+                {item.durationInSeconds.toFixed(1)}s · {item.elements.length} layer{item.elements.length === 1 ? "" : "s"}
+              </div>
+            </button>
+          ))}
+          <button
+            onClick={addScene}
+            className="min-w-[110px] rounded-xl border border-dashed border-white/15 px-3 py-2 text-left text-xs text-white/50 transition hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
+          >
+            + Add scene
+          </button>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <button onClick={duplicateScene} className="text-xs text-white/45 hover:text-white">Duplicate scene</button>
+          <span className="text-white/15">·</span>
+          <button
+            onClick={deleteScene}
+            disabled={project.scenes.length === 1}
+            className="text-xs text-white/45 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-25"
+          >
+            Delete scene
+          </button>
+        </div>
+      </div>
+
+      <div className="flex min-h-[calc(100vh-8.75rem)] flex-col">
         <section className="grid min-h-0 flex-1 lg:grid-cols-[290px_1fr_320px]">
           <aside className="overflow-y-auto border-r border-white/10 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Layers</p>
+                <p className="mt-1 text-xs text-white/30">Select a text layer to edit it.</p>
+              </div>
+              <button
+                onClick={addTextElement}
+                className="rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-white/65 hover:border-[#d7ff45]/50 hover:text-[#d7ff45]"
+              >
+                + Text
+              </button>
+            </div>
+
+            <div className="mb-6 space-y-2">
+              {scene.elements.map((element) => (
+                <button
+                  key={element.id}
+                  onClick={() => setSelectedElement(element.id)}
+                  className={`w-full rounded-xl border p-3 text-left ${
+                    selectedElementId === element.id
+                      ? "border-[#d7ff45] bg-[#d7ff45]/10"
+                      : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <div className="truncate text-sm font-semibold">{element.content}</div>
+                  <div className="mt-1 text-xs text-white/35">
+                    {element.startTime.toFixed(2)}s → {(element.startTime + element.duration).toFixed(2)}s
+                  </div>
+                </button>
+              ))}
+            </div>
+
             <div className="mb-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Text animations</p>
               <p className="mt-1 text-xs text-white/30">Hover to preview · click to apply</p>
@@ -81,7 +216,7 @@ export function MotionPlayground() {
                   onBlur={() => setPreviewPresetId(null)}
                   onClick={() => setMotionPreset(preset.id)}
                   className={`group w-full rounded-xl border p-3 text-left transition ${
-                    headline.motionPresetId === preset.id
+                    selectedElement.motionPresetId === preset.id
                       ? "border-[#d7ff45] bg-[#d7ff45]/10"
                       : "border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.055]"
                   }`}
@@ -99,7 +234,7 @@ export function MotionPlayground() {
                     <AnimatedText
                       text="MOVE"
                       presetId={preset.id}
-                      motionSettings={{ ...headline.motionSettings, splitBy: "characters" }}
+                      motionSettings={{ ...selectedElement.motionSettings, splitBy: "characters" }}
                       replayKey={previewPresetId === preset.id ? previewKey : 0}
                       compact
                     />
@@ -114,35 +249,59 @@ export function MotionPlayground() {
               className={`relative aspect-[9/16] h-[58vh] max-h-[680px] min-h-[420px] overflow-hidden rounded-[28px] border border-white/10 shadow-2xl ${background.className}`}
             >
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
-              <button
-                type="button"
-                onClick={() => setSelectedElement(headline.id)}
-                className={`relative flex h-full w-full items-center justify-center px-12 text-[#f7f7f4] outline-none ${
-                  selectedElementId === headline.id ? "ring-2 ring-inset ring-[#d7ff45]/70" : ""
-                }`}
-              >
-                {headlineVisible ? (
-                  <AnimatedText
-                    text={headline.content}
-                    presetId={activePresetId}
-                    motionSettings={headline.motionSettings}
-                    replayKey={activeReplayKey}
-                  />
-                ) : (
-                  <div className="text-center text-xs font-medium uppercase tracking-[0.2em] text-white/20">
-                    Scrub into the text clip to preview it
+              <div className="relative h-full w-full text-[#f7f7f4]">
+                {visibleElements.length === 0 && (
+                  <div className="absolute inset-0 grid place-items-center px-8 text-center text-xs font-medium uppercase tracking-[0.2em] text-white/20">
+                    Scrub into a clip or press Play
                   </div>
                 )}
-              </button>
+
+                {visibleElements.map((element, index) => {
+                  const isSelected = selectedElementId === element.id;
+                  const localReplayKey = activeReplayKey + Math.round(element.startTime * 100) + index;
+                  return (
+                    <button
+                      key={element.id}
+                      type="button"
+                      onClick={() => setSelectedElement(element.id)}
+                      className={`absolute left-1/2 top-1/2 flex w-[82%] -translate-x-1/2 items-center justify-center rounded-2xl px-4 py-2 outline-none ${
+                        isSelected ? "ring-2 ring-[#d7ff45]/70" : ""
+                      }`}
+                      style={{ transform: `translate(-50%, calc(-50% + ${index * 110 - (visibleElements.length - 1) * 55}px))` }}
+                    >
+                      <AnimatedText
+                        text={element.content}
+                        presetId={isSelected ? activePresetId : element.motionPresetId}
+                        motionSettings={element.motionSettings}
+                        replayKey={localReplayKey}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <aside className="overflow-y-auto border-l border-white/10 p-5">
             <div className="space-y-7">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">Selected text</div>
+                  <div className="text-xs text-white/35">{selectedElement.content}</div>
+                </div>
+                <button
+                  onClick={deleteSelectedElement}
+                  disabled={scene.elements.length === 1}
+                  className="text-xs text-white/35 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-20"
+                >
+                  Delete
+                </button>
+              </div>
+
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Content</label>
                 <textarea
-                  value={headline.content}
+                  value={selectedElement.content}
                   onChange={(event) => setHeadline(event.target.value)}
                   rows={4}
                   className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm outline-none transition focus:border-[#d7ff45]/70"
@@ -155,14 +314,14 @@ export function MotionPlayground() {
                   <div>
                     <div className="mb-2 flex justify-between text-xs text-white/55">
                       <span>Duration</span>
-                      <span>{headline.motionSettings.duration.toFixed(2)}s</span>
+                      <span>{selectedElement.motionSettings.duration.toFixed(2)}s</span>
                     </div>
                     <input
                       type="range"
                       min="0.2"
                       max="1.5"
                       step="0.05"
-                      value={headline.motionSettings.duration}
+                      value={selectedElement.motionSettings.duration}
                       onChange={(event) => setMotionDuration(Number(event.target.value))}
                       className="w-full accent-[#d7ff45]"
                     />
@@ -171,14 +330,14 @@ export function MotionPlayground() {
                   <div>
                     <div className="mb-2 flex justify-between text-xs text-white/55">
                       <span>Stagger</span>
-                      <span>{headline.motionSettings.stagger.toFixed(2)}s</span>
+                      <span>{selectedElement.motionSettings.stagger.toFixed(2)}s</span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="0.25"
                       step="0.01"
-                      value={headline.motionSettings.stagger}
+                      value={selectedElement.motionSettings.stagger}
                       onChange={(event) => setMotionStagger(Number(event.target.value))}
                       className="w-full accent-[#d7ff45]"
                     />
@@ -192,7 +351,7 @@ export function MotionPlayground() {
                           key={value}
                           onClick={() => setSplitBy(value)}
                           className={`rounded-lg border px-3 py-2 text-xs capitalize transition ${
-                            headline.motionSettings.splitBy === value
+                            selectedElement.motionSettings.splitBy === value
                               ? "border-[#d7ff45] bg-[#d7ff45]/10 text-[#d7ff45]"
                               : "border-white/10 text-white/55 hover:bg-white/[0.04]"
                           }`}
