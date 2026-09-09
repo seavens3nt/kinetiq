@@ -24,10 +24,9 @@ export function MotionPlayground() {
     replayKey,
     currentTime,
     isPlaying,
-    selectedLayerId,
     selectedComponentId,
     selectedMusicTrackId,
-    setCanvasSize,
+    startBlankProject,
     setHeadline,
     setMotionPreset,
     setMotionDuration,
@@ -97,7 +96,14 @@ export function MotionPlayground() {
   const isLandscape = project.width > project.height;
 
   if (!hasStarted) {
-    return <ProjectStartScreen onStart={(width, height) => { setCanvasSize(width, height); setHasStarted(true); }} />;
+    return (
+      <ProjectStartScreen
+        onStart={(width, height) => {
+          startBlankProject(width, height);
+          setHasStarted(true);
+        }}
+      />
+    );
   }
 
   return (
@@ -144,7 +150,15 @@ export function MotionPlayground() {
           <div className="flex min-h-0 items-center justify-center overflow-hidden bg-[#17181d] p-3 lg:p-5">
             <div className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className} ${isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"}`} style={{ aspectRatio: `${project.width} / ${project.height}` }}>
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
-              {visibleComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-white/20">Scrub into a component or press Play</div>}
+              {allComponents.length === 0 && (
+                <div className="absolute inset-0 grid place-items-center px-8 text-center">
+                  <div>
+                    <div className="text-sm font-semibold text-white/40">Blank canvas</div>
+                    <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/20">Use + Add below to create your first layer or component</div>
+                  </div>
+                </div>
+              )}
+              {allComponents.length > 0 && visibleComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-white/20">Scrub into a component or press Play</div>}
               {visibleComponents.map(({ component, layerId }, index) => {
                 const isSelected = selectedComponentId === component.id;
                 const left = `${(component.x / project.width) * 100}%`;
@@ -191,7 +205,7 @@ export function MotionPlayground() {
                     <div className="rounded-xl border border-[#8067FF]/20 bg-[#8067FF]/[0.06] p-4 text-[10px] leading-5 text-white/45">{selectedComponent.type === "image" || selectedComponent.type === "video" ? "This component is ready for media upload and canvas transform controls." : "This component is ready for canvas transform and style controls."}</div>
                   )}
                 </>
-              ) : <div className="text-xs text-white/35">Select a component or music track.</div>}
+              ) : <div className="text-xs text-white/35">Nothing selected yet. Add a layer or component from the timeline.</div>}
 
               <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Background</p><div className="grid grid-cols-2 gap-1.5">{backgroundPresets.map((preset) => <button key={preset.id} onClick={() => setBackgroundPreset(preset.id)} className={`rounded-lg border p-1.5 text-left ${timeline.backgroundPresetId === preset.id ? "border-[#D7FF45]" : "border-white/10"}`}><div className={`mb-1.5 h-10 rounded-md ${preset.className}`} /><span className="text-[10px] text-white/70">{preset.name}</span></button>)}</div></div>
             </div>
