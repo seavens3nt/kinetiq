@@ -84,11 +84,13 @@ export function MotionPlayground() {
 
   const visibleComponents = useMemo(
     () =>
-      timeline.layers.flatMap((layer) =>
-        layer.components
-          .filter((component) => currentTime >= component.startTime && currentTime <= component.startTime + component.duration)
-          .map((component) => ({ component, layerId: layer.id })),
-      ),
+      timeline.layers
+        .filter((layer) => layer.visible)
+        .flatMap((layer) =>
+          layer.components
+            .filter((component) => currentTime >= component.startTime && currentTime <= component.startTime + component.duration)
+            .map((component) => ({ component, layerId: layer.id })),
+        ),
     [timeline.layers, currentTime],
   );
 
