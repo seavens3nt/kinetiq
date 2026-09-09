@@ -99,7 +99,7 @@ export const SceneSchema = z.object({
   name: z.string(),
   durationInSeconds: z.number().positive(),
   backgroundPresetId: BackgroundPresetIdSchema,
-  layers: z.array(LayerSchema).min(1),
+  layers: z.array(LayerSchema),
   musicTracks: z.array(MusicTrackSchema),
 });
 
