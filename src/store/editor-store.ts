@@ -3,12 +3,17 @@
 import { create } from "zustand";
 import type {
   BackgroundPresetId,
+  Layer,
   MotionPresetId,
   MotionSettings,
+  MusicTrack,
   Project,
   SplitBy,
-  TextElement,
+  TextComponent,
+  VisualComponent,
 } from "@/lib/project-schema";
+
+export type AddableComponentType = "text" | "image" | "video" | "shape" | "ui";
 
 const defaultMotionSettings: MotionSettings = {
   duration: 0.55,
@@ -16,14 +21,20 @@ const defaultMotionSettings: MotionSettings = {
   splitBy: "words",
 };
 
-function makeTextElement(index: number, overrides: Partial<TextElement> = {}): TextElement {
+function id(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function makeTextComponent(index = 0, overrides: Partial<TextComponent> = {}): TextComponent {
   return {
-    id: `text-${Date.now()}-${index}`,
+    id: id("text"),
+    name: index === 0 ? "Heading" : `Text ${index + 1}`,
     type: "text",
     content: index === 0 ? "MAKE IDEAS MOVE." : `TEXT ${index + 1}`,
     x: 120,
-    y: 760 + index * 150,
+    y: 760 + index * 120,
     width: 840,
+    height: 180,
     fontSize: index === 0 ? 96 : 72,
     fontWeight: 800,
     color: "#f7f7f4",
@@ -35,6 +46,37 @@ function makeTextElement(index: number, overrides: Partial<TextElement> = {}): T
   };
 }
 
+function makeComponent(type: AddableComponentType, index = 0): VisualComponent {
+  const base = {
+    id: id(type),
+    name: type === "ui" ? "UI Component" : `${type[0].toUpperCase()}${type.slice(1)}`,
+    startTime: Math.min(index * 0.25, 2),
+    duration: 2.5,
+    x: 160,
+    y: 620 + index * 70,
+    width: 760,
+    height: 420,
+  };
+
+  if (type === "text") return makeTextComponent(index, base);
+  if (type === "image") return { ...base, type, src: null, fit: "contain" };
+  if (type === "video") return { ...base, type, src: null, muted: true };
+  if (type === "shape") return { ...base, type, shape: "rectangle", fill: "#8067ff", radius: 32 };
+  return { ...base, type: "ui", preset: "notification", label: "Notification" };
+}
+
+const initialText = makeTextComponent(0, {
+  id: "headline-1",
+  startTime: 0.35,
+  duration: 2.8,
+});
+
+const initialLayer: Layer = {
+  id: "layer-1",
+  name: "Layer 1",
+  components: [initialText],
+};
+
 const initialProject: Project = {
   version: 1,
   id: "demo-project",
@@ -44,17 +86,12 @@ const initialProject: Project = {
   fps: 30,
   scenes: [
     {
-      id: "scene-1",
-      name: "Scene 1",
-      durationInSeconds: 4,
+      id: "master",
+      name: "Master",
+      durationInSeconds: 6,
       backgroundPresetId: "ink",
-      elements: [
-        makeTextElement(0, {
-          id: "headline-1",
-          startTime: 0.35,
-          duration: 2.8,
-        }),
-      ],
+      layers: [initialLayer],
+      musicTracks: [],
     },
   ],
 };
@@ -65,7 +102,9 @@ type EditorStore = {
   currentTime: number;
   isPlaying: boolean;
   activeSceneIndex: number;
-  selectedElementId: string | null;
+  selectedLayerId: string | null;
+  selectedComponentId: string | null;
+  selectedMusicTrackId: string | null;
   setCanvasSize: (width: number, height: number) => void;
   setHeadline: (content: string) => void;
   setMotionPreset: (presetId: MotionPresetId) => void;
@@ -77,33 +116,39 @@ type EditorStore = {
   setPlaying: (isPlaying: boolean) => void;
   togglePlayback: () => void;
   setActiveScene: (index: number) => void;
-  addScene: () => void;
-  duplicateScene: () => void;
-  deleteScene: () => void;
-  addTextElement: () => void;
-  deleteSelectedElement: () => void;
-  setSelectedElement: (elementId: string | null) => void;
-  setElementTiming: (elementId: string, startTime: number, duration: number) => void;
+  addLayer: (type?: AddableComponentType) => void;
+  addComponentToSelectedLayer: (type: AddableComponentType) => void;
+  addMusicTrack: () => void;
+  deleteSelectedComponent: () => void;
+  setSelectedLayer: (layerId: string | null) => void;
+  setSelectedComponent: (componentId: string | null, layerId?: string | null) => void;
+  setSelectedMusicTrack: (trackId: string | null) => void;
+  setComponentTiming: (componentId: string, startTime: number, duration: number) => void;
+  setMusicTiming: (trackId: string, startTime: number, duration: number) => void;
   setSceneDuration: (duration: number) => void;
   replay: () => void;
 };
 
-function updateSelectedElement(
+function updateSelectedText(
   project: Project,
-  activeSceneIndex: number,
-  selectedElementId: string | null,
-  updater: (element: TextElement) => TextElement,
+  selectedComponentId: string | null,
+  updater: (component: TextComponent) => TextComponent,
 ): Project {
-  if (!selectedElementId) return project;
+  if (!selectedComponentId) return project;
   return {
     ...project,
     scenes: project.scenes.map((scene, sceneIndex) =>
-      sceneIndex === activeSceneIndex
+      sceneIndex === 0
         ? {
             ...scene,
-            elements: scene.elements.map((element) =>
-              element.id === selectedElementId ? updater(element) : element,
-            ),
+            layers: scene.layers.map((layer) => ({
+              ...layer,
+              components: layer.components.map((component) =>
+                component.id === selectedComponentId && component.type === "text"
+                  ? updater(component)
+                  : component,
+              ),
+            })),
           }
         : scene,
     ),
@@ -116,7 +161,9 @@ export const useEditorStore = create<EditorStore>((set) => ({
   currentTime: 0,
   isPlaying: false,
   activeSceneIndex: 0,
-  selectedElementId: "headline-1",
+  selectedLayerId: initialLayer.id,
+  selectedComponentId: initialText.id,
+  selectedMusicTrackId: null,
 
   setCanvasSize: (width, height) =>
     set((state) => ({
@@ -128,64 +175,39 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   setHeadline: (content) =>
     set((state) => ({
-      project: updateSelectedElement(
-        state.project,
-        state.activeSceneIndex,
-        state.selectedElementId,
-        (element) => ({ ...element, content }),
-      ),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, content })),
     })),
 
   setMotionPreset: (motionPresetId) =>
     set((state) => ({
-      project: updateSelectedElement(
-        state.project,
-        state.activeSceneIndex,
-        state.selectedElementId,
-        (element) => ({ ...element, motionPresetId }),
-      ),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({ ...component, motionPresetId })),
       replayKey: state.replayKey + 1,
     })),
 
   setMotionDuration: (duration) =>
     set((state) => ({
-      project: updateSelectedElement(
-        state.project,
-        state.activeSceneIndex,
-        state.selectedElementId,
-        (element) => ({
-          ...element,
-          motionSettings: { ...element.motionSettings, duration },
-        }),
-      ),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
+        ...component,
+        motionSettings: { ...component.motionSettings, duration },
+      })),
       replayKey: state.replayKey + 1,
     })),
 
   setMotionStagger: (stagger) =>
     set((state) => ({
-      project: updateSelectedElement(
-        state.project,
-        state.activeSceneIndex,
-        state.selectedElementId,
-        (element) => ({
-          ...element,
-          motionSettings: { ...element.motionSettings, stagger },
-        }),
-      ),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
+        ...component,
+        motionSettings: { ...component.motionSettings, stagger },
+      })),
       replayKey: state.replayKey + 1,
     })),
 
   setSplitBy: (splitBy) =>
     set((state) => ({
-      project: updateSelectedElement(
-        state.project,
-        state.activeSceneIndex,
-        state.selectedElementId,
-        (element) => ({
-          ...element,
-          motionSettings: { ...element.motionSettings, splitBy },
-        }),
-      ),
+      project: updateSelectedText(state.project, state.selectedComponentId, (component) => ({
+        ...component,
+        motionSettings: { ...component.motionSettings, splitBy },
+      })),
       replayKey: state.replayKey + 1,
     })),
 
@@ -194,157 +216,164 @@ export const useEditorStore = create<EditorStore>((set) => ({
       project: {
         ...state.project,
         scenes: state.project.scenes.map((scene, index) =>
-          index === state.activeSceneIndex ? { ...scene, backgroundPresetId } : scene,
+          index === 0 ? { ...scene, backgroundPresetId } : scene,
         ),
       },
     })),
 
   setCurrentTime: (time) =>
     set((state) => {
-      const sceneDuration = state.project.scenes[state.activeSceneIndex].durationInSeconds;
-      return { currentTime: Math.min(sceneDuration, Math.max(0, time)) };
+      const duration = state.project.scenes[0].durationInSeconds;
+      return { currentTime: Math.min(duration, Math.max(0, time)) };
     }),
 
   setPlaying: (isPlaying) => set({ isPlaying }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
+  setActiveScene: () => set({ activeSceneIndex: 0 }),
 
-  setActiveScene: (index) =>
+  addLayer: (type = "text") =>
     set((state) => {
-      const safeIndex = Math.min(Math.max(0, index), state.project.scenes.length - 1);
-      const scene = state.project.scenes[safeIndex];
-      return {
-        activeSceneIndex: safeIndex,
-        currentTime: 0,
-        isPlaying: false,
-        selectedElementId: scene.elements[0]?.id ?? null,
-        replayKey: state.replayKey + 1,
+      const scene = state.project.scenes[0];
+      const component = makeComponent(type, scene.layers.length);
+      const layer: Layer = {
+        id: id("layer"),
+        name: `Layer ${scene.layers.length + 1}`,
+        components: [component],
       };
-    }),
-
-  addScene: () =>
-    set((state) => {
-      const nextIndex = state.project.scenes.length;
-      const element = makeTextElement(0, {
-        id: `scene-${nextIndex + 1}-headline`,
-        content: `SCENE ${nextIndex + 1}`,
-      });
-      const nextScene = {
-        id: `scene-${Date.now()}`,
-        name: `Scene ${nextIndex + 1}`,
-        durationInSeconds: 4,
-        backgroundPresetId: "ink" as const,
-        elements: [element],
-      };
-      return {
-        project: { ...state.project, scenes: [...state.project.scenes, nextScene] },
-        activeSceneIndex: nextIndex,
-        currentTime: 0,
-        isPlaying: false,
-        selectedElementId: element.id,
-        replayKey: state.replayKey + 1,
-      };
-    }),
-
-  duplicateScene: () =>
-    set((state) => {
-      const source = state.project.scenes[state.activeSceneIndex];
-      const copyIndex = state.activeSceneIndex + 1;
-      const copiedElements = source.elements.map((element, index) => ({
-        ...element,
-        id: `${element.id}-copy-${Date.now()}-${index}`,
-      }));
-      const copy = {
-        ...source,
-        id: `${source.id}-copy-${Date.now()}`,
-        name: `${source.name} Copy`,
-        elements: copiedElements,
-      };
-      const scenes = [...state.project.scenes];
-      scenes.splice(copyIndex, 0, copy);
-      return {
-        project: { ...state.project, scenes },
-        activeSceneIndex: copyIndex,
-        currentTime: 0,
-        isPlaying: false,
-        selectedElementId: copiedElements[0]?.id ?? null,
-        replayKey: state.replayKey + 1,
-      };
-    }),
-
-  deleteScene: () =>
-    set((state) => {
-      if (state.project.scenes.length === 1) return state;
-      const scenes = state.project.scenes.filter((_, index) => index !== state.activeSceneIndex);
-      const nextIndex = Math.min(state.activeSceneIndex, scenes.length - 1);
-      return {
-        project: { ...state.project, scenes },
-        activeSceneIndex: nextIndex,
-        currentTime: 0,
-        isPlaying: false,
-        selectedElementId: scenes[nextIndex].elements[0]?.id ?? null,
-        replayKey: state.replayKey + 1,
-      };
-    }),
-
-  addTextElement: () =>
-    set((state) => {
-      const scene = state.project.scenes[state.activeSceneIndex];
-      const element = makeTextElement(scene.elements.length, {
-        duration: Math.min(2.5, scene.durationInSeconds),
-      });
       return {
         project: {
           ...state.project,
-          scenes: state.project.scenes.map((item, index) =>
-            index === state.activeSceneIndex
-              ? { ...item, elements: [...item.elements, element] }
-              : item,
-          ),
+          scenes: [{ ...scene, layers: [...scene.layers, layer] }, ...state.project.scenes.slice(1)],
         },
-        selectedElementId: element.id,
+        selectedLayerId: layer.id,
+        selectedComponentId: component.id,
+        selectedMusicTrackId: null,
         replayKey: state.replayKey + 1,
       };
     }),
 
-  deleteSelectedElement: () =>
+  addComponentToSelectedLayer: (type) =>
     set((state) => {
-      if (!state.selectedElementId) return state;
-      const scene = state.project.scenes[state.activeSceneIndex];
-      if (scene.elements.length <= 1) return state;
-      const elements = scene.elements.filter((element) => element.id !== state.selectedElementId);
+      const scene = state.project.scenes[0];
+      const layerId = state.selectedLayerId ?? scene.layers[0].id;
+      const target = scene.layers.find((layer) => layer.id === layerId) ?? scene.layers[0];
+      const component = makeComponent(type, target.components.length);
       return {
         project: {
           ...state.project,
-          scenes: state.project.scenes.map((item, index) =>
-            index === state.activeSceneIndex ? { ...item, elements } : item,
-          ),
+          scenes: [
+            {
+              ...scene,
+              layers: scene.layers.map((layer) =>
+                layer.id === target.id ? { ...layer, components: [...layer.components, component] } : layer,
+              ),
+            },
+            ...state.project.scenes.slice(1),
+          ],
         },
-        selectedElementId: elements[0]?.id ?? null,
+        selectedLayerId: target.id,
+        selectedComponentId: component.id,
+        selectedMusicTrackId: null,
+        replayKey: state.replayKey + 1,
       };
     }),
 
-  setSelectedElement: (selectedElementId) => set({ selectedElementId }),
-
-  setElementTiming: (elementId, startTime, duration) =>
+  addMusicTrack: () =>
     set((state) => {
-      const sceneDuration = state.project.scenes[state.activeSceneIndex].durationInSeconds;
-      const safeStart = Math.min(Math.max(0, startTime), Math.max(0, sceneDuration - 0.1));
-      const safeDuration = Math.min(Math.max(0.1, duration), sceneDuration - safeStart);
+      const scene = state.project.scenes[0];
+      const track: MusicTrack = {
+        id: id("music"),
+        name: `Music ${scene.musicTracks.length + 1}`,
+        src: null,
+        startTime: 0,
+        duration: scene.durationInSeconds,
+        volume: 0.8,
+        loop: false,
+      };
       return {
         project: {
           ...state.project,
-          scenes: state.project.scenes.map((scene, sceneIndex) =>
-            sceneIndex === state.activeSceneIndex
-              ? {
-                  ...scene,
-                  elements: scene.elements.map((element) =>
-                    element.id === elementId
-                      ? { ...element, startTime: safeStart, duration: safeDuration }
-                      : element,
-                  ),
-                }
-              : scene,
-          ),
+          scenes: [{ ...scene, musicTracks: [...scene.musicTracks, track] }, ...state.project.scenes.slice(1)],
+        },
+        selectedMusicTrackId: track.id,
+        selectedComponentId: null,
+      };
+    }),
+
+  deleteSelectedComponent: () =>
+    set((state) => {
+      if (!state.selectedComponentId) return state;
+      const scene = state.project.scenes[0];
+      let nextSelected: string | null = null;
+      const layers = scene.layers
+        .map((layer) => ({
+          ...layer,
+          components: layer.components.filter((component) => component.id !== state.selectedComponentId),
+        }))
+        .filter((layer) => layer.components.length > 0);
+      const safeLayers = layers.length ? layers : [{ id: id("layer"), name: "Layer 1", components: [makeTextComponent(0)] }];
+      nextSelected = safeLayers[0].components[0]?.id ?? null;
+      return {
+        project: {
+          ...state.project,
+          scenes: [{ ...scene, layers: safeLayers }, ...state.project.scenes.slice(1)],
+        },
+        selectedLayerId: safeLayers[0].id,
+        selectedComponentId: nextSelected,
+      };
+    }),
+
+  setSelectedLayer: (selectedLayerId) => set({ selectedLayerId, selectedMusicTrackId: null }),
+  setSelectedComponent: (selectedComponentId, layerId) =>
+    set((state) => ({
+      selectedComponentId,
+      selectedLayerId: layerId ?? state.selectedLayerId,
+      selectedMusicTrackId: null,
+    })),
+  setSelectedMusicTrack: (selectedMusicTrackId) =>
+    set({ selectedMusicTrackId, selectedComponentId: null }),
+
+  setComponentTiming: (componentId, startTime, duration) =>
+    set((state) => {
+      const scene = state.project.scenes[0];
+      const safeStart = Math.min(Math.max(0, startTime), Math.max(0, scene.durationInSeconds - 0.1));
+      const safeDuration = Math.min(Math.max(0.1, duration), scene.durationInSeconds - safeStart);
+      return {
+        project: {
+          ...state.project,
+          scenes: [
+            {
+              ...scene,
+              layers: scene.layers.map((layer) => ({
+                ...layer,
+                components: layer.components.map((component) =>
+                  component.id === componentId ? { ...component, startTime: safeStart, duration: safeDuration } : component,
+                ),
+              })),
+            },
+            ...state.project.scenes.slice(1),
+          ],
+        },
+      };
+    }),
+
+  setMusicTiming: (trackId, startTime, duration) =>
+    set((state) => {
+      const scene = state.project.scenes[0];
+      const safeStart = Math.min(Math.max(0, startTime), Math.max(0, scene.durationInSeconds - 0.1));
+      const safeDuration = Math.min(Math.max(0.1, duration), scene.durationInSeconds - safeStart);
+      return {
+        project: {
+          ...state.project,
+          scenes: [
+            {
+              ...scene,
+              musicTracks: scene.musicTracks.map((track) =>
+                track.id === trackId ? { ...track, startTime: safeStart, duration: safeDuration } : track,
+              ),
+            },
+            ...state.project.scenes.slice(1),
+          ],
         },
       };
     }),
@@ -352,34 +381,27 @@ export const useEditorStore = create<EditorStore>((set) => ({
   setSceneDuration: (duration) =>
     set((state) => {
       const safeDuration = Math.max(1, duration);
+      const scene = state.project.scenes[0];
+      const clampTimed = <T extends { startTime: number; duration: number }>(item: T): T => {
+        const startTime = Math.min(item.startTime, Math.max(0, safeDuration - 0.1));
+        return { ...item, startTime, duration: Math.min(item.duration, Math.max(0.1, safeDuration - startTime)) };
+      };
       return {
         project: {
           ...state.project,
-          scenes: state.project.scenes.map((scene, index) =>
-            index === state.activeSceneIndex
-              ? {
-                  ...scene,
-                  durationInSeconds: safeDuration,
-                  elements: scene.elements.map((element) => {
-                    const safeStart = Math.min(element.startTime, Math.max(0, safeDuration - 0.1));
-                    return {
-                      ...element,
-                      startTime: safeStart,
-                      duration: Math.min(element.duration, Math.max(0.1, safeDuration - safeStart)),
-                    };
-                  }),
-                }
-              : scene,
-          ),
+          scenes: [
+            {
+              ...scene,
+              durationInSeconds: safeDuration,
+              layers: scene.layers.map((layer) => ({ ...layer, components: layer.components.map(clampTimed) })),
+              musicTracks: scene.musicTracks.map(clampTimed),
+            },
+            ...state.project.scenes.slice(1),
+          ],
         },
         currentTime: Math.min(state.currentTime, safeDuration),
       };
     }),
 
-  replay: () =>
-    set((state) => ({
-      replayKey: state.replayKey + 1,
-      currentTime: 0,
-      isPlaying: false,
-    })),
+  replay: () => set((state) => ({ replayKey: state.replayKey + 1, currentTime: 0, isPlaying: false })),
 }));
