@@ -1,4 +1,4 @@
-import type { Project } from "@/lib/project-schema";
+import type { Project, VisualComponent } from "@/lib/project-schema";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
 export type CloudProject = {
@@ -65,7 +65,6 @@ export async function uploadProjectAsset(file: File, projectId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const extension = file.name.includes(".") ? file.name.split(".").pop() : "bin";
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
   const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
 
@@ -77,7 +76,7 @@ export async function uploadProjectAsset(file: File, projectId: string) {
 
   const { data } = supabase.storage.from("project-assets").getPublicUrl(path);
 
-  await supabase.from("assets").insert({
+  const { error: assetError } = await supabase.from("assets").insert({
     user_id: user.id,
     project_id: projectId,
     type: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "audio",
@@ -86,6 +85,52 @@ export async function uploadProjectAsset(file: File, projectId: string) {
     mime_type: file.type,
     size_bytes: file.size,
   });
+  if (assetError) throw assetError;
 
   return data.publicUrl;
+}
+
+async function uploadBlobUrl(src: string, fileName: string, mimeType: string, projectId: string) {
+  if (!src.startsWith("blob:")) return src;
+  const response = await fetch(src);
+  const blob = await response.blob();
+  const file = new File([blob], fileName || "asset", { type: blob.type || mimeType });
+  return (await uploadProjectAsset(file, projectId)) ?? src;
+}
+
+export async function persistProjectBlobAssets(project: Project) {
+  let changed = false;
+  const scenes = [] as Project["scenes"];
+
+  for (const scene of project.scenes) {
+    const layers = [] as typeof scene.layers;
+    for (const layer of scene.layers) {
+      const components: VisualComponent[] = [];
+      for (const component of layer.components) {
+        if ((component.type === "image" || component.type === "video") && component.src?.startsWith("blob:")) {
+          const nextSrc = await uploadBlobUrl(component.src, component.name, component.type === "image" ? "image/*" : "video/*", project.id);
+          components.push({ ...component, src: nextSrc } as VisualComponent);
+          changed = changed || nextSrc !== component.src;
+        } else {
+          components.push(component);
+        }
+      }
+      layers.push({ ...layer, components });
+    }
+
+    const musicTracks = [] as typeof scene.musicTracks;
+    for (const track of scene.musicTracks) {
+      if (track.src?.startsWith("blob:")) {
+        const nextSrc = await uploadBlobUrl(track.src, track.name, "audio/*", project.id);
+        musicTracks.push({ ...track, src: nextSrc });
+        changed = changed || nextSrc !== track.src;
+      } else {
+        musicTracks.push(track);
+      }
+    }
+
+    scenes.push({ ...scene, layers, musicTracks });
+  }
+
+  return changed ? { ...project, scenes } : project;
 }
