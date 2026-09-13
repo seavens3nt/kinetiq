@@ -7,6 +7,10 @@ export const MotionPresetIdSchema = z.enum([
   "pop",
   "blur-reveal",
   "split-rise",
+  "typing",
+  "blur-stagger",
+  "shiny",
+  "decrypt",
 ]);
 
 export const SplitBySchema = z.enum(["words", "characters"]);
@@ -22,6 +26,10 @@ export const BackgroundPresetIdSchema = z.enum([
   "paper",
   "acid-glow",
   "violet-mesh",
+  "soft-grid",
+  "lime-haze",
+  "violet-glow",
+  "clean-light",
 ]);
 
 export const TransitionTypeSchema = z.enum(["none", "fade", "dissolve", "slide", "zoom"]);
