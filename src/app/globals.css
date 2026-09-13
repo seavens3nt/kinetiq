@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: dark;
-  background: #111216;
+  background: #09090c;
 }
 
 * {
@@ -15,12 +15,285 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #111216;
+  background: #09090c;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow: hidden;
 }
 
 button,
 textarea,
-input {
+input,
+select {
   font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(215, 255, 69, 0.2);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.17);
+}
+
+/*
+ * Kinetiq editor workspace
+ * Dense, neutral tool UI inspired by professional motion/video workspaces.
+ * The launcher remains intentionally more spacious; these rules only target
+ * the actual editor shell after a project has been opened.
+ */
+main.flex.h-screen {
+  background: #09090c !important;
+}
+
+main.flex.h-screen > header {
+  height: 48px !important;
+  min-height: 48px;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  background: #0d0d11 !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+}
+
+main.flex.h-screen > header > div:first-child {
+  gap: 9px !important;
+}
+
+main.flex.h-screen > header > div:first-child > div:first-child {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+  font-size: 12px !important;
+  box-shadow: 0 0 22px rgba(215, 255, 69, 0.055);
+}
+
+main.flex.h-screen > header > div:first-child > div:last-child > div:first-child {
+  font-size: 12px !important;
+  letter-spacing: -0.02em;
+}
+
+main.flex.h-screen > header > div:first-child > div:last-child > div:last-child {
+  font-size: 9px !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+main.flex.h-screen > header > div:last-child {
+  gap: 6px !important;
+}
+
+main.flex.h-screen > header button,
+main.flex.h-screen > header > div:last-child > div {
+  min-height: 28px;
+  border-radius: 7px !important;
+  padding: 5px 9px !important;
+  font-size: 9px !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+main.flex.h-screen > header button:hover {
+  border-color: rgba(215, 255, 69, 0.24) !important;
+  background: rgba(215, 255, 69, 0.04) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child {
+  grid-template-columns: 218px minmax(0, 1fr) 286px !important;
+  background: #0a0a0e;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside {
+  background: #0d0d11 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  padding: 12px !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child {
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.018);
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child {
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.018);
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside p[class*="uppercase"] {
+  letter-spacing: 0.13em !important;
+  font-size: 9px !important;
+  color: rgba(255, 255, 255, 0.28) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child > div > div.space-y-1\.5 > button {
+  border-radius: 8px !important;
+  padding: 8px !important;
+  background: rgba(255, 255, 255, 0.018) !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child > div > div.space-y-1\.5 > button:hover {
+  background: rgba(128, 103, 255, 0.055) !important;
+  border-color: rgba(128, 103, 255, 0.24) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child > div > div.space-y-1\.5 > button > div:first-child > div:first-child {
+  font-size: 10px !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child > div > div.space-y-1\.5 > button > div:nth-child(2) {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+  line-height: 1.35 !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.025), transparent 34%),
+    #151519 !important;
+  padding: 18px !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex::before {
+  content: "Canvas";
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 4;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 6px;
+  background: rgba(9, 9, 12, 0.72);
+  color: rgba(255, 255, 255, 0.27);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex > div[style*="aspect-ratio"] {
+  border-radius: 10px !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 18px 55px rgba(0, 0, 0, 0.42) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child > div {
+  gap: 14px !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child div[class*="rounded-lg"][class*="border"] {
+  border-radius: 8px !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+  background: rgba(255, 255, 255, 0.018) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child input,
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child textarea,
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child select {
+  border-radius: 6px !important;
+  border-color: rgba(255, 255, 255, 0.075) !important;
+  background: #121217 !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child button {
+  border-radius: 6px !important;
+}
+
+/* Timeline: make it feel like a dedicated dock instead of a giant card stack. */
+main.flex.h-screen > div.flex-1 > section:last-child {
+  height: 282px;
+  min-height: 220px;
+  max-height: 36vh;
+  background: #0a0a0e !important;
+  border-color: rgba(255, 255, 255, 0.065) !important;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.16);
+}
+
+main.flex.h-screen > div.flex-1 > section:last-child > div:first-child {
+  height: 38px !important;
+  background: #0d0d11 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:last-child button {
+  border-radius: 5px !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:last-child [class*="border-white/10"] {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+main.flex.h-screen > div.flex-1 > section:last-child [class*="bg-[#101015]"] {
+  background: #0d0d11 !important;
+}
+
+/* Auth controls live in the top-right as a compact app-level utility cluster. */
+body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 {
+  top: 9px !important;
+  right: 12px !important;
+}
+
+body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 > div {
+  gap: 5px !important;
+}
+
+body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 button {
+  min-height: 28px;
+  padding: 5px 9px !important;
+  border-radius: 7px !important;
+  font-size: 9px !important;
+  backdrop-filter: blur(12px);
+}
+
+body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 span {
+  font-size: 9px !important;
+}
+
+@media (max-width: 1180px) {
+  main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: 190px minmax(0, 1fr) 250px !important;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:last-child {
+    height: 250px;
+  }
+}
+
+@media (max-width: 960px) {
+  main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: 170px minmax(0, 1fr) 220px !important;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:first-child > aside {
+    padding: 9px !important;
+  }
+
+  body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 {
+    right: 8px !important;
+  }
 }
