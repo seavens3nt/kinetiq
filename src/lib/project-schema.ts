@@ -48,6 +48,8 @@ const TimedComponentSchema = z.object({
   y: z.number(),
   width: z.number().positive(),
   height: z.number().positive(),
+  rotation: z.number().min(-360).max(360).optional(),
+  opacity: z.number().min(0).max(1).optional(),
   transitionIn: TransitionSchema.optional(),
   transitionOut: TransitionSchema.optional(),
   keyframes: z.array(TransformKeyframeSchema).optional(),
