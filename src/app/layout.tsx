@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import "./globals.css";
 import "./landing-fixes.css";
+import "./theme.css";
 
 export const metadata: Metadata = {
   title: "Kinetiq",
