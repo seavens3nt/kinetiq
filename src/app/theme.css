@@ -1,0 +1,179 @@
+/* Kinetiq theme system. Dark remains the default brand mode; light mode changes UI chrome without changing the lime accent. */
+
+svg[viewBox="0 0 72 72"] {
+  background-image: url("/kinetiq-mark.svg") !important;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  background: #f3f4ee;
+}
+
+html[data-theme="light"] body {
+  background: #f3f4ee;
+  color: #17171a;
+}
+
+html[data-theme="light"] .theme-toggle {
+  border-color: rgba(18, 18, 20, 0.12) !important;
+  background: rgba(255, 255, 252, 0.94) !important;
+  color: rgba(18, 18, 20, 0.72) !important;
+  box-shadow: 0 10px 30px rgba(20, 20, 18, 0.08);
+}
+
+html[data-theme="light"] .theme-toggle:hover {
+  border-color: rgba(122, 148, 21, 0.34) !important;
+  color: #657b0e !important;
+}
+
+/* Landing page + project launcher */
+html[data-theme="light"] main.min-h-screen:not(.flex) {
+  background: #f3f4ee !important;
+  color: #17171a !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) > header {
+  border-color: rgba(18, 18, 20, 0.08) !important;
+  background: rgba(247, 248, 243, 0.9) !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="bg-[#0"],
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="bg-[#1"] {
+  background-color: #f8f8f4 !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="bg-white/"] {
+  background-color: rgba(18, 18, 20, 0.035) !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="border-white"] {
+  border-color: rgba(18, 18, 20, 0.1) !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="text-white"] {
+  color: rgba(18, 18, 20, 0.58) !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="text-[#f6f6f3]"],
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="text-[#F7F7F4]"] {
+  color: #17171a !important;
+}
+
+html[data-theme="light"] main.min-h-screen:not(.flex) [class*="shadow-[0_"] {
+  box-shadow: 0 22px 70px rgba(30, 30, 24, 0.1) !important;
+}
+
+/* Studio shell and editor chrome. The project canvas itself is intentionally not recolored. */
+html[data-theme="light"] .kinetiq-studio-shell {
+  background: #eef0e9 !important;
+}
+
+html[data-theme="light"] main.flex.h-screen {
+  background: #eef0e9 !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > header {
+  background: #fafaf6 !important;
+  border-color: rgba(18, 18, 20, 0.09) !important;
+  color: #17171a !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > header [class*="text-white"] {
+  color: rgba(18, 18, 20, 0.56) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > header button,
+html[data-theme="light"] main.flex.h-screen > header > div:last-child > div {
+  background: rgba(18, 18, 20, 0.035) !important;
+  border-color: rgba(18, 18, 20, 0.09) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child {
+  background: #eceee7 !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside {
+  background: #f8f8f4 !important;
+  border-color: rgba(18, 18, 20, 0.09) !important;
+  color: #17171a !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside [class*="text-white"] {
+  color: rgba(18, 18, 20, 0.56) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside [class*="bg-white/"] {
+  background: rgba(18, 18, 20, 0.035) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside [class*="border-white"] {
+  border-color: rgba(18, 18, 20, 0.09) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside input,
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside textarea,
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > aside select {
+  background: #ffffff !important;
+  border-color: rgba(18, 18, 20, 0.11) !important;
+  color: #17171a !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex {
+  background: radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0.025), transparent 34%), #dfe1db !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex::before {
+  background: rgba(250, 250, 246, 0.8) !important;
+  border-color: rgba(18, 18, 20, 0.08) !important;
+  color: rgba(18, 18, 20, 0.42) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:last-child {
+  background: #f3f4ef !important;
+  border-color: rgba(18, 18, 20, 0.09) !important;
+  color: #17171a !important;
+  box-shadow: 0 -10px 30px rgba(20, 20, 18, 0.06);
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:last-child > div:first-child,
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:last-child [class*="bg-[#101015]"] {
+  background: #fafaf6 !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:last-child [class*="text-white"] {
+  color: rgba(18, 18, 20, 0.55) !important;
+}
+
+html[data-theme="light"] main.flex.h-screen > div.flex-1 > section:last-child [class*="border-white"] {
+  border-color: rgba(18, 18, 20, 0.09) !important;
+}
+
+/* Auth controls and cloud project dialogs */
+html[data-theme="light"] .kinetiq-studio-shell > div.fixed [class*="bg-[#121218]"] {
+  background: #fafaf7 !important;
+  color: #17171a !important;
+}
+
+html[data-theme="light"] .kinetiq-studio-shell > div.fixed [class*="bg-white/"] {
+  background: rgba(18, 18, 20, 0.035) !important;
+}
+
+html[data-theme="light"] .kinetiq-studio-shell > div.fixed [class*="text-white"] {
+  color: rgba(18, 18, 20, 0.56) !important;
+}
+
+html[data-theme="light"] .kinetiq-studio-shell > div.fixed [class*="border-white"] {
+  border-color: rgba(18, 18, 20, 0.1) !important;
+}
+
+html[data-theme="light"] .kinetiq-studio-shell > div.fixed input {
+  background: #ffffff !important;
+  border-color: rgba(18, 18, 20, 0.12) !important;
+  color: #17171a !important;
+}
+
+@media (max-width: 700px) {
+  .theme-toggle {
+    min-width: 36px;
+  }
+}
