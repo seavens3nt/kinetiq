@@ -15,8 +15,8 @@ type ProjectStartScreenProps = {
 type Step = "home" | "new-video" | "blank-canvas";
 
 const navItems = [
-  { label: "Home", icon: "⌂" },
-  { label: "Projects", icon: "▣" },
+  { label: "Home", icon: "⌂", muted: false },
+  { label: "Projects", icon: "▣", muted: false },
   { label: "Templates", icon: "◇", muted: true },
 ] as const;
 
