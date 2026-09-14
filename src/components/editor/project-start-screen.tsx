@@ -90,7 +90,7 @@ export function ProjectStartScreen({ onStart }: ProjectStartScreenProps) {
             <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">Create something that moves.</h1>
             <p className="mt-2 max-w-xl text-[12px] leading-5 text-white/35">Start from a clean canvas, then build with layers, motion presets, media, and a continuous timeline.</p>
           </div>
-          <div className="hidden rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/30 lg:block">Autosave enabled</div>
+          <div className="hidden rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/30 lg:block">Cloud saves available</div>
         </div>
 
         <div className="mt-8">

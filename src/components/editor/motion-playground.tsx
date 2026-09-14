@@ -5,6 +5,8 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { AnimatedText } from "@/components/editor/animated-text";
 import { ProjectStartScreen } from "@/components/editor/project-start-screen";
 import { TimelineEditor } from "@/components/editor/timeline-editor";
+import { AuthProjectControls } from "@/components/auth/auth-project-controls";
+import { EditorToolBrowser } from "@/components/editor/editor-v2-enhancements";
 import { backgroundPresets, motionPresets } from "@/lib/presets";
 import type { MotionPresetId, TransitionType, VisualComponent } from "@/lib/project-schema";
 import { useEditorStore } from "@/store/editor-store";
@@ -387,6 +389,7 @@ export function MotionPlayground() {
           <button type="button" onClick={() => mediaInputRef.current?.click()} className="rounded-full border border-[#8067FF]/30 bg-[#8067FF]/10 px-3 py-1.5 text-[10px] font-medium text-[#C7BEFF] hover:border-[#D7FF45]/45 hover:text-[#D7FF45]">Import media</button>
           <button type="button" onClick={() => setHasStarted(false)} className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/45 hover:border-[#8067FF]/40 hover:text-white">{project.width} × {project.height}</button>
           <div className="hidden rounded-full border border-[#8067FF]/25 bg-[#8067FF]/10 px-3 py-1.5 text-[11px] text-[#C7BEFF] 2xl:block">{timeline.layers.length} layers · {allComponents.length} components{timeline.musicTracks.length ? ` · ${timeline.musicTracks.length} music` : ""}</div>
+          <AuthProjectControls />
         </div>
       </header>
 
@@ -416,7 +419,7 @@ export function MotionPlayground() {
             onDrop={(event) => { event.preventDefault(); setIsDraggingMedia(false); importFiles(event.dataTransfer.files); }}
           >
             {isDraggingMedia && <div className="pointer-events-none absolute inset-4 z-50 grid place-items-center rounded-2xl border-2 border-dashed border-[#D7FF45]/60 bg-[#0B0B0F]/80 text-sm font-semibold text-[#D7FF45] backdrop-blur">Drop image, video, or audio</div>}
-            <div ref={canvasRef} className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className} ${isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"}`} style={{ aspectRatio: `${project.width} / ${project.height}` }}>
+          <div ref={canvasRef} className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className} ${isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"}`} style={{ aspectRatio: `${project.width} / ${project.height}`, containerType: "inline-size" }}>
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
               {allComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center"><div><div className="text-sm font-semibold text-white/40">Blank canvas</div><div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/20">Drop media here or use + Add below</div></div></div>}
               {allComponents.length > 0 && visibleComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-white/20">Scrub into a component or press Play</div>}
@@ -437,7 +440,7 @@ export function MotionPlayground() {
                 const select = () => setSelectedComponent(component.id, layerId);
 
                 if (component.type === "text") {
-                  return <button key={component.id} onClick={select} className={`absolute flex items-center justify-center rounded-xl px-2 outline-none ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><AnimatedText text={component.content} presetId={isSelected && previewPresetId ? previewPresetId : component.motionPresetId} motionSettings={component.motionSettings} replayKey={activeReplayKey + index + Math.round(component.startTime * 100)} /></button>;
+                  return <button key={component.id} onClick={select} className={`absolute flex items-center justify-center rounded-xl px-2 outline-none ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><AnimatedText text={component.content} presetId={isSelected && previewPresetId ? previewPresetId : component.motionPresetId} motionSettings={component.motionSettings} replayKey={activeReplayKey + index + Math.round(component.startTime * 100)} fontSize={`${(component.fontSize / project.width) * 100}cqw`} fontWeight={component.fontWeight} color={component.color} /></button>;
                 }
                 if (component.type === "image" && component.src) {
                   return <button key={component.id} onClick={select} className={`absolute overflow-hidden rounded-xl ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><img src={component.src} alt={component.name} className={`h-full w-full ${component.fit === "cover" ? "object-cover" : "object-contain"}`} /></button>;
@@ -523,6 +526,7 @@ export function MotionPlayground() {
         </section>
         <TimelineEditor />
       </div>
+      <EditorToolBrowser />
     </main>
   );
 }

@@ -19,12 +19,18 @@ export function AnimatedText({
   motionSettings,
   replayKey,
   compact = false,
+  fontSize,
+  fontWeight,
+  color,
 }: {
   text: string;
   presetId: MotionPresetId;
   motionSettings: MotionSettings;
   replayKey: number;
   compact?: boolean;
+  fontSize?: string;
+  fontWeight?: number;
+  color?: string;
 }) {
   const [typedText, setTypedText] = useState(text);
   const [decryptText, setDecryptText] = useState(text);
@@ -77,7 +83,7 @@ export function AnimatedText({
 
   if (presetId === "typing") {
     return (
-      <div key={`${presetId}-${replayKey}`} className={`${commonClass} inline-flex items-end justify-center`}>
+      <div key={`${presetId}-${replayKey}`} style={{ fontSize, fontWeight, color }} className={`${commonClass} inline-flex items-end justify-center`}>
         <span>{typedText}</span>
         <motion.span
           aria-hidden="true"
@@ -90,13 +96,14 @@ export function AnimatedText({
   }
 
   if (presetId === "decrypt") {
-    return <div key={`${presetId}-${replayKey}`} className={`${commonClass} font-mono`}>{decryptText}</div>;
+    return <div key={`${presetId}-${replayKey}`} style={{ fontSize, fontWeight, color }} className={`${commonClass} font-mono`}>{decryptText}</div>;
   }
 
   if (presetId === "shiny") {
     return (
       <motion.div
         key={`${presetId}-${replayKey}`}
+        style={{ fontSize, fontWeight, color }}
         className={`${commonClass} bg-[linear-gradient(105deg,#f7f7f4_20%,#d7ff45_42%,#ffffff_50%,#8067ff_58%,#f7f7f4_80%)] bg-[length:220%_100%] bg-clip-text text-transparent`}
         initial={{ backgroundPosition: "120% 0" }}
         animate={{ backgroundPosition: "-120% 0" }}
@@ -115,6 +122,7 @@ export function AnimatedText({
         initial="hidden"
         animate="visible"
         variants={{ hidden: {}, visible: { transition: { staggerChildren: motionSettings.stagger } } }}
+        style={{ fontSize, fontWeight, color }}
         className={`${commonClass} flex max-w-4xl flex-wrap justify-center ${motionSettings.splitBy === "words" ? "gap-x-[0.22em] gap-y-1" : "gap-0"}`}
       >
         {splitTokens.map((token, index) => (
@@ -158,6 +166,7 @@ export function AnimatedText({
       initial={variants.initial}
       animate={variants.animate}
       transition={{ duration: motionSettings.duration, ease: [0.22, 1, 0.36, 1] }}
+      style={{ fontSize, fontWeight, color }}
       className={commonClass}
     >
       {text}

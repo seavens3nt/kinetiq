@@ -107,6 +107,13 @@ export function EditorToolBrowser() {
   const selectedText = selectedComponent?.type === "text" ? selectedComponent : null;
   const scene = project.scenes[0];
 
+  useEffect(() => {
+    document.documentElement.dataset.toolsCollapsed = String(collapsed);
+    return () => {
+      delete document.documentElement.dataset.toolsCollapsed;
+    };
+  }, [collapsed]);
+
   const importFiles = (files: FileList | null, audioOnly = false) => {
     if (!files?.length) return;
     Array.from(files).forEach((file) => {

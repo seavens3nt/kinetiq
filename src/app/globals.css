@@ -122,8 +122,12 @@ main.flex.h-screen > header button:hover {
 }
 
 main.flex.h-screen > div.flex-1 > section:first-child {
-  grid-template-columns: 218px minmax(0, 1fr) 286px !important;
+  grid-template-columns: 292px minmax(0, 1fr) 286px !important;
   background: #0a0a0e;
+}
+
+html[data-tools-collapsed="true"] main.flex.h-screen > div.flex-1 > section:first-child {
+  grid-template-columns: 58px minmax(0, 1fr) 286px !important;
 }
 
 main.flex.h-screen > div.flex-1 > section:first-child > aside {
@@ -276,7 +280,11 @@ body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 span {
 
 @media (max-width: 1180px) {
   main.flex.h-screen > div.flex-1 > section:first-child {
-    grid-template-columns: 190px minmax(0, 1fr) 250px !important;
+    grid-template-columns: 250px minmax(0, 1fr) 250px !important;
+  }
+
+  html[data-tools-collapsed="true"] main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: 58px minmax(0, 1fr) 250px !important;
   }
 
   main.flex.h-screen > div.flex-1 > section:last-child {
@@ -286,7 +294,11 @@ body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 span {
 
 @media (max-width: 960px) {
   main.flex.h-screen > div.flex-1 > section:first-child {
-    grid-template-columns: 170px minmax(0, 1fr) 220px !important;
+    grid-template-columns: 224px minmax(0, 1fr) 220px !important;
+  }
+
+  html[data-tools-collapsed="true"] main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: 58px minmax(0, 1fr) 220px !important;
   }
 
   main.flex.h-screen > div.flex-1 > section:first-child > aside {
@@ -295,5 +307,43 @@ body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 span {
 
   body > div > div.relative.min-h-screen > div.fixed.right-5.top-3 {
     right: 8px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  main.flex.h-screen > header {
+    height: auto !important;
+    min-height: 48px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px !important;
+  }
+
+  main.flex.h-screen > header > div:last-child {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html[data-tools-collapsed="true"] main.flex.h-screen > div.flex-1 > section:first-child {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:first-child > aside:first-child,
+  main.flex.h-screen > div.flex-1 > section:first-child > aside:last-child {
+    display: none !important;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:first-child > div.relative.flex {
+    min-width: 0;
+  }
+
+  main.flex.h-screen > div.flex-1 > section:last-child {
+    height: 250px;
+    min-height: 250px;
   }
 }
