@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { AnimatedText } from "@/components/editor/animated-text";
 import { ProjectStartScreen } from "@/components/editor/project-start-screen";
@@ -8,7 +8,7 @@ import { TimelineEditor } from "@/components/editor/timeline-editor";
 import { AuthProjectControls } from "@/components/auth/auth-project-controls";
 import { EditorToolBrowser } from "@/components/editor/editor-v2-enhancements";
 import { backgroundPresets, motionPresets } from "@/lib/presets";
-import type { MotionPresetId, TransitionType, VisualComponent } from "@/lib/project-schema";
+import type { MotionPresetId, TransitionType, UIComponent, VisualComponent } from "@/lib/project-schema";
 import { useEditorStore } from "@/store/editor-store";
 
 function componentLabel(component: VisualComponent) {
@@ -25,7 +25,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-const transitions: TransitionType[] = ["none", "fade", "dissolve", "slide", "zoom"];
+const transitions: TransitionType[] = ["none", "fade", "dissolve", "slide", "zoom", "chromatic-blur", "color-smear"];
+
+function uiPreview(component: UIComponent) {
+  if (component.preset === "notification-stack") return <div className="space-y-1.5">{["Export complete", "Comment added", "Version saved"].map((label, index) => <div key={label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[.06] p-2" style={{ transform: `translateX(${index * 6}px)` }}><span className="h-2 w-2 rounded-full bg-[#D7FF45]" /><span className="text-[9px] font-medium">{label}</span></div>)}</div>;
+  if (component.preset === "otp") return <div><div className="text-[8px] uppercase tracking-[.18em] text-white/40">Verification code</div><div className="mt-3 grid grid-cols-6 gap-1">{"483920".split("").map((digit, index) => <span key={`${digit}-${index}`} className="grid aspect-square place-items-center rounded-md border border-white/15 bg-white/[.05] text-xs font-bold">{digit}</span>)}</div></div>;
+  if (component.preset === "apple-control") return <div className="space-y-3"><div className="grid grid-cols-3 rounded-lg bg-white/10 p-1 text-center text-[8px]"><span className="rounded-md bg-white px-2 py-1 text-black">Motion</span><span className="px-2 py-1">Style</span><span className="px-2 py-1">Audio</span></div><div className="flex items-center justify-between text-[9px]"><span>Auto animate</span><span className="h-4 w-8 rounded-full bg-[#D7FF45] p-0.5"><i className="ml-auto block h-3 w-3 rounded-full bg-black" /></span></div></div>;
+  if (component.preset === "figma-panel") return <div className="space-y-2 text-[8px]"><div className="flex justify-between"><span className="text-white/40">Position</span><span>120 × 320</span></div><div className="grid grid-cols-2 gap-1"><span className="rounded border border-white/10 p-1.5">W 760</span><span className="rounded border border-white/10 p-1.5">H 420</span></div><div className="h-1.5 rounded-full bg-[#8067FF]" /></div>;
+  if (component.preset === "cursor") return <div className="grid place-items-center"><div className="relative h-12 w-12 rounded-full border border-[#D7FF45]/50 bg-[#D7FF45]/10"><span className="absolute left-4 top-3 text-xl">↖</span><span className="absolute -bottom-3 left-8 rounded bg-[#8067FF] px-2 py-1 text-[7px]">Click</span></div></div>;
+  return <><div className="text-[9px] uppercase tracking-[0.16em] text-[#D7FF45]">{component.preset}</div><div className="mt-2 text-sm font-semibold">{component.label}</div><div className="mt-2 h-2 w-2/3 rounded-full bg-[#8067FF]/50" /></>;
+}
 
 type CanvasGuide = { x?: number; y?: number } | null;
 type TransformMode = "move" | "resize" | "rotate";
@@ -38,6 +47,7 @@ export function MotionPlayground() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isDraggingMedia, setIsDraggingMedia] = useState(false);
   const [canvasGuide, setCanvasGuide] = useState<CanvasGuide>(null);
+  const [selectedWordIndex, setSelectedWordIndex] = useState(0);
 
   const {
     project,
@@ -72,6 +82,12 @@ export function MotionPlayground() {
   const selectedText = selectedComponent?.type === "text" ? selectedComponent : null;
   const selectedMusic = timeline.musicTracks.find((track) => track.id === selectedMusicTrackId) ?? null;
   const background = backgroundPresets.find((item) => item.id === timeline.backgroundPresetId)!;
+  const selectedWords = selectedText?.content.trim().split(/\s+/).filter(Boolean) ?? [];
+  const selectedWordStyle = selectedText?.wordStyles?.find((style) => style.wordIndex === selectedWordIndex);
+
+  useEffect(() => {
+    setSelectedWordIndex((index) => Math.min(index, Math.max(0, selectedWords.length - 1)));
+  }, [selectedComponentId, selectedWords.length]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -140,6 +156,14 @@ export function MotionPlayground() {
         },
         replayKey: state.replayKey + 1,
       };
+    });
+  };
+
+  const updateSelectedWordStyle = (patch: { color?: string; fontWeight?: number; fontSizeScale?: number; opacity?: number }) => {
+    updateComponent((component) => {
+      if (component.type !== "text") return component;
+      const current = component.wordStyles?.find((style) => style.wordIndex === selectedWordIndex) ?? { wordIndex: selectedWordIndex };
+      return { ...component, wordStyles: [...(component.wordStyles ?? []).filter((style) => style.wordIndex !== selectedWordIndex), { ...current, ...patch }] };
     });
   };
 
@@ -346,7 +370,7 @@ export function MotionPlayground() {
     });
   };
 
-  const transitionStyle = (component: VisualComponent): { opacity?: number; transform?: string } => {
+  const transitionStyle = (component: VisualComponent): CSSProperties => {
     const local = currentTime - component.startTime;
     const remaining = component.duration - local;
     const inTransition = component.transitionIn ?? { type: "none" as const, duration: 0 };
@@ -365,6 +389,8 @@ export function MotionPlayground() {
     if (type === "none") return {};
     if (type === "slide") return { opacity: progress, transform: `translateX(${(1 - progress) * 28}px)` };
     if (type === "zoom") return { opacity: progress, transform: `scale(${0.9 + progress * 0.1})` };
+    if (type === "chromatic-blur") return { opacity: progress, filter: `blur(${(1 - progress) * 18}px)`, textShadow: `${(1 - progress) * 12}px 0 #8067ff, -${(1 - progress) * 12}px 0 #d7ff45` };
+    if (type === "color-smear") return { opacity: progress, filter: `blur(${(1 - progress) * 10}px) saturate(${1 + (1 - progress) * 2})`, transform: `translateX(${(1 - progress) * 55}px) scaleX(${1 + (1 - progress) * 0.35})`, boxShadow: `${(1 - progress) * -35}px 0 ${20 + (1 - progress) * 35}px rgba(128,103,255,.45)` };
     return { opacity: progress };
   };
 
@@ -419,7 +445,7 @@ export function MotionPlayground() {
             onDrop={(event) => { event.preventDefault(); setIsDraggingMedia(false); importFiles(event.dataTransfer.files); }}
           >
             {isDraggingMedia && <div className="pointer-events-none absolute inset-4 z-50 grid place-items-center rounded-2xl border-2 border-dashed border-[#D7FF45]/60 bg-[#0B0B0F]/80 text-sm font-semibold text-[#D7FF45] backdrop-blur">Drop image, video, or audio</div>}
-          <div ref={canvasRef} className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${background.className} ${isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"}`} style={{ aspectRatio: `${project.width} / ${project.height}`, containerType: "inline-size" }}>
+          <div ref={canvasRef} className={`relative min-h-0 overflow-hidden rounded-[22px] border border-white/10 shadow-2xl ${isLandscape ? "w-[min(100%,900px)] max-h-full" : "h-full max-w-full"}`} style={{ aspectRatio: `${project.width} / ${project.height}`, containerType: "inline-size", backgroundColor: background.backgroundColor, backgroundImage: background.backgroundImage, backgroundSize: background.backgroundSize }}>
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px] opacity-30" />
               {allComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center"><div><div className="text-sm font-semibold text-white/40">Blank canvas</div><div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/20">Drop media here or use + Add below</div></div></div>}
               {allComponents.length > 0 && visibleComponents.length === 0 && <div className="absolute inset-0 grid place-items-center px-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-white/20">Scrub into a component or press Play</div>}
@@ -434,13 +460,13 @@ export function MotionPlayground() {
                 const width = `${Math.min(95, (component.width / project.width) * 100)}%`;
                 const height = `${Math.min(90, (component.height / project.height) * 100)}%`;
                 const transition = transitionStyle(component);
-                const transitionOpacity = transition.opacity ?? 1;
+                const transitionOpacity = typeof transition.opacity === "number" ? transition.opacity : 1;
                 const transitionTransform = transition.transform ? `${transition.transform} ` : "";
-                const shared = { left, top, width, height, opacity: transitionOpacity * (component.opacity ?? 1), transform: `${transitionTransform}rotate(${component.rotation ?? 0}deg)`, transformOrigin: "center center" };
+                const shared = { ...transition, left, top, width, height, opacity: transitionOpacity * (component.opacity ?? 1), transform: `${transitionTransform}rotate(${component.rotation ?? 0}deg)`, transformOrigin: "center center" };
                 const select = () => setSelectedComponent(component.id, layerId);
 
                 if (component.type === "text") {
-                  return <button key={component.id} onClick={select} className={`absolute flex items-center justify-center rounded-xl px-2 outline-none ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><AnimatedText text={component.content} presetId={isSelected && previewPresetId ? previewPresetId : component.motionPresetId} motionSettings={component.motionSettings} replayKey={activeReplayKey + index + Math.round(component.startTime * 100)} fontSize={`${(component.fontSize / project.width) * 100}cqw`} fontWeight={component.fontWeight} color={component.color} /></button>;
+                  return <button key={component.id} onClick={select} className={`absolute flex items-center justify-center rounded-xl px-2 outline-none ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><AnimatedText text={component.content} presetId={isSelected && previewPresetId ? previewPresetId : component.motionPresetId} motionSettings={component.motionSettings} replayKey={activeReplayKey + index + Math.round(component.startTime * 100)} fontSize={`${(component.fontSize / project.width) * 100}cqw`} fontWeight={component.fontWeight} color={component.color} wordStyles={component.wordStyles} typingSfx={component.typingSfx} /></button>;
                 }
                 if (component.type === "image" && component.src) {
                   return <button key={component.id} onClick={select} className={`absolute overflow-hidden rounded-xl ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><img src={component.src} alt={component.name} className={`h-full w-full ${component.fit === "cover" ? "object-cover" : "object-contain"}`} /></button>;
@@ -449,7 +475,7 @@ export function MotionPlayground() {
                   return <button key={component.id} onClick={select} className={`absolute overflow-hidden rounded-xl bg-black ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><video src={component.src} muted={component.muted} autoPlay loop playsInline onLoadedMetadata={(event) => { event.currentTarget.playbackRate = component.playbackRate ?? 1; }} className="h-full w-full object-contain" /></button>;
                 }
                 if (component.type === "shape") return <button key={component.id} onClick={select} className={`absolute ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={{ ...shared, background: component.fill, borderRadius: component.shape === "circle" ? "999px" : component.shape === "pill" ? "999px" : component.radius }} />;
-                if (component.type === "ui") return <button key={component.id} onClick={select} className={`absolute rounded-2xl border bg-[#111216]/90 p-4 text-left shadow-xl backdrop-blur ${isSelected ? "border-[#D7FF45]/60" : "border-white/15"}`} style={shared}><div className="text-[9px] uppercase tracking-[0.16em] text-[#D7FF45]">{component.preset}</div><div className="mt-2 text-sm font-semibold">{component.label}</div><div className="mt-2 h-2 w-2/3 rounded-full bg-[#8067FF]/50" /></button>;
+                if (component.type === "ui") return <button key={component.id} onClick={select} className={`absolute rounded-2xl border bg-[#111216]/90 p-4 text-left shadow-xl backdrop-blur ${isSelected ? "border-[#D7FF45]/60" : "border-white/15"}`} style={shared}>{uiPreview(component)}</button>;
                 return <button key={component.id} onClick={select} className={`absolute grid place-items-center rounded-2xl border border-dashed bg-black/20 text-center ${isSelected ? "border-[#D7FF45] text-[#D7FF45]" : "border-white/20 text-white/35"}`} style={shared}><div><div className="text-xl">{component.type === "image" ? "▧" : "▶"}</div><div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]">{component.type}</div><div className="mt-1 text-[9px] opacity-60">Drop or import media</div></div></button>;
               })}
 
@@ -501,6 +527,8 @@ export function MotionPlayground() {
 
                   {selectedText && <div><label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Content</label><textarea value={selectedText.content} onChange={(event) => setHeadline(event.target.value)} rows={3} className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] p-2.5 text-xs outline-none focus:border-[#D7FF45]/70" /></div>}
 
+                  {selectedText && selectedWords.length > 0 && <div><div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Word styling</p><button onClick={() => updateComponent((component) => component.type === "text" ? { ...component, wordStyles: (component.wordStyles ?? []).filter((style) => style.wordIndex !== selectedWordIndex) } : component)} className="text-[9px] text-white/35 hover:text-[#D7FF45]">Reset word</button></div><div className="rounded-lg border border-white/10 bg-white/[0.025] p-3"><div className="mb-3 flex flex-wrap gap-1">{selectedWords.map((word, index) => <button key={`${word}-${index}`} onClick={() => setSelectedWordIndex(index)} className={`rounded-md border px-2 py-1 text-[9px] ${selectedWordIndex === index ? "border-[#D7FF45] bg-[#D7FF45]/10 text-[#D7FF45]" : "border-white/10 text-white/50"}`}>{word}</button>)}</div><div className="grid grid-cols-2 gap-2"><label className="text-[9px] text-white/45">Color<input aria-label="Selected word color" type="color" value={selectedWordStyle?.color ?? selectedText.color} onChange={(event) => updateSelectedWordStyle({ color: event.target.value })} className="mt-1 h-8 w-full rounded border border-white/10 bg-transparent p-1" /></label><label className="text-[9px] text-white/45">Weight<select value={selectedWordStyle?.fontWeight ?? selectedText.fontWeight} onChange={(event) => updateSelectedWordStyle({ fontWeight: Number(event.target.value) })} className="mt-1 h-8 w-full rounded border border-white/10 bg-[#15151B] px-2 text-[9px]">{[400, 500, 600, 700, 800, 900].map((weight) => <option key={weight} value={weight}>{weight}</option>)}</select></label></div><label className="mt-3 block text-[9px] text-white/45"><span className="flex justify-between"><span>Size</span><span>{(selectedWordStyle?.fontSizeScale ?? 1).toFixed(2)}×</span></span><input type="range" min="0.5" max="2" step="0.05" value={selectedWordStyle?.fontSizeScale ?? 1} onChange={(event) => updateSelectedWordStyle({ fontSizeScale: Number(event.target.value) })} className="mt-1 w-full accent-[#8067FF]" /></label><label className="mt-2 block text-[9px] text-white/45"><span className="flex justify-between"><span>Opacity</span><span>{Math.round((selectedWordStyle?.opacity ?? 1) * 100)}%</span></span><input type="range" min="0" max="1" step="0.05" value={selectedWordStyle?.opacity ?? 1} onChange={(event) => updateSelectedWordStyle({ opacity: Number(event.target.value) })} className="mt-1 w-full accent-[#D7FF45]" /></label></div></div>}
+
                   {selectedText && <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Motion controls</p><div className="space-y-4 rounded-lg border border-white/10 bg-white/[0.025] p-3">
                     <div><div className="mb-1.5 flex justify-between text-[10px] text-white/55"><span>Duration</span><span>{selectedText.motionSettings.duration.toFixed(2)}s</span></div><input type="range" min="0.2" max="1.5" step="0.05" value={selectedText.motionSettings.duration} onChange={(event) => setMotionDuration(Number(event.target.value))} className="w-full accent-[#D7FF45]" /></div>
                     <div><div className="mb-1.5 flex justify-between text-[10px] text-white/55"><span>Stagger</span><span>{selectedText.motionSettings.stagger.toFixed(2)}s</span></div><input type="range" min="0" max="0.25" step="0.01" value={selectedText.motionSettings.stagger} onChange={(event) => setMotionStagger(Number(event.target.value))} className="w-full accent-[#D7FF45]" /></div>
@@ -520,7 +548,7 @@ export function MotionPlayground() {
                 </>
               ) : <div className="text-xs text-white/35">Nothing selected yet. Drop media or add a component from the timeline.</div>}
 
-              <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Background</p><div className="grid grid-cols-2 gap-1.5">{backgroundPresets.map((preset) => <button key={preset.id} onClick={() => setBackgroundPreset(preset.id)} className={`rounded-lg border p-1.5 text-left ${timeline.backgroundPresetId === preset.id ? "border-[#D7FF45]" : "border-white/10"}`}><div className={`mb-1.5 h-10 rounded-md ${preset.className}`} /><span className="text-[10px] text-white/70">{preset.name}</span></button>)}</div></div>
+              <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Background</p><div className="grid grid-cols-2 gap-1.5">{backgroundPresets.map((preset) => <button key={preset.id} onClick={() => setBackgroundPreset(preset.id)} className={`rounded-lg border p-1.5 text-left ${timeline.backgroundPresetId === preset.id ? "border-[#D7FF45]" : "border-white/10"}`}><div className="mb-1.5 h-10 rounded-md" style={{ backgroundColor: preset.backgroundColor, backgroundImage: preset.backgroundImage, backgroundSize: preset.backgroundSize }} /><span className="text-[10px] text-white/70">{preset.name}</span></button>)}</div></div>
             </div>
           </aside>
         </section>

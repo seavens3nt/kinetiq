@@ -11,6 +11,12 @@ export const MotionPresetIdSchema = z.enum([
   "blur-stagger",
   "shiny",
   "decrypt",
+  "scatter-gather",
+  "sentence-build",
+  "word-swap",
+  "follow-type",
+  "text-pill",
+  "anchor-reveal",
 ]);
 
 export const SplitBySchema = z.enum(["words", "characters"]);
@@ -32,7 +38,7 @@ export const BackgroundPresetIdSchema = z.enum([
   "clean-light",
 ]);
 
-export const TransitionTypeSchema = z.enum(["none", "fade", "dissolve", "slide", "zoom"]);
+export const TransitionTypeSchema = z.enum(["none", "fade", "dissolve", "slide", "zoom", "chromatic-blur", "color-smear"]);
 export const TransitionSchema = z.object({
   type: TransitionTypeSchema,
   duration: z.number().min(0).max(2),
@@ -71,6 +77,18 @@ export const TextComponentSchema = TimedComponentSchema.extend({
   color: z.string(),
   motionPresetId: MotionPresetIdSchema,
   motionSettings: MotionSettingsSchema,
+  wordStyles: z.array(z.object({
+    wordIndex: z.number().int().min(0),
+    color: z.string().optional(),
+    fontWeight: z.number().positive().optional(),
+    fontSizeScale: z.number().min(0.5).max(2).optional(),
+    opacity: z.number().min(0).max(1).optional(),
+  })).optional(),
+  typingSfx: z.object({
+    enabled: z.boolean(),
+    volume: z.number().min(0).max(1),
+    pitch: z.number().min(0.5).max(2),
+  }).optional(),
 });
 
 export const ImageComponentSchema = TimedComponentSchema.extend({
@@ -95,7 +113,7 @@ export const ShapeComponentSchema = TimedComponentSchema.extend({
 
 export const UIComponentSchema = TimedComponentSchema.extend({
   type: z.literal("ui"),
-  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph"]),
+  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph", "notification-stack", "otp", "apple-control", "figma-panel", "cursor"]),
   label: z.string(),
 });
 
@@ -161,6 +179,8 @@ export type TransitionType = z.infer<typeof TransitionTypeSchema>;
 export type Transition = z.infer<typeof TransitionSchema>;
 export type TransformKeyframe = z.infer<typeof TransformKeyframeSchema>;
 export type TextComponent = z.infer<typeof TextComponentSchema>;
+export type TextWordStyle = NonNullable<TextComponent["wordStyles"]>[number];
+export type TypingSfx = NonNullable<TextComponent["typingSfx"]>;
 export type ImageComponent = z.infer<typeof ImageComponentSchema>;
 export type VideoComponent = z.infer<typeof VideoComponentSchema>;
 export type ShapeComponent = z.infer<typeof ShapeComponentSchema>;

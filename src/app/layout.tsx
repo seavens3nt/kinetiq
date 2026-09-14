@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { SupabaseAuthBridge } from "@/components/auth/supabase-auth-bridge";
 import "./globals.css";
 import "./landing-fixes.css";
 import "./theme.css";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
+        <SupabaseAuthBridge />
         {children}
         <div className="fixed bottom-4 right-4 z-[120]">
           <ThemeToggle />

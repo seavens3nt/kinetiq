@@ -24,6 +24,8 @@ const transitionOptions: Array<{ id: TransitionType; name: string; hint: string 
   { id: "dissolve", name: "Dissolve", hint: "Soft scene blend" },
   { id: "slide", name: "Slide", hint: "Directional movement" },
   { id: "zoom", name: "Zoom", hint: "Scale into focus" },
+  { id: "chromatic-blur", name: "Chromatic Blur", hint: "RGB blur resolves into focus" },
+  { id: "color-smear", name: "Color Smear", hint: "Directional brand-color streak" },
 ];
 
 const uiPresets: Array<{ preset: UIComponent["preset"]; label: string; hint: string }> = [
@@ -33,6 +35,11 @@ const uiPresets: Array<{ preset: UIComponent["preset"]; label: string; hint: str
   { preset: "phone", label: "Phone frame", hint: "Mobile product mockup" },
   { preset: "browser", label: "Browser window", hint: "Web product frame" },
   { preset: "graph", label: "Graph", hint: "Simple analytics UI" },
+  { preset: "notification-stack", label: "Notification stack", hint: "Staggered alert cards" },
+  { preset: "otp", label: "OTP verification", hint: "Six-digit verification UI" },
+  { preset: "apple-control", label: "Apple controls", hint: "Segmented control and toggle" },
+  { preset: "figma-panel", label: "Figma panel", hint: "Design inspector surface" },
+  { preset: "cursor", label: "Product cursor", hint: "Pointer and click target" },
 ];
 
 function uid(prefix: string) {
@@ -229,11 +236,11 @@ export function EditorToolBrowser() {
             <div className="kinetiq-tool-group"><div className="kinetiq-group-label">Text motion</div>{motionPresets.slice(0, 6).map((preset) => <button key={preset.id} type="button" disabled={!selectedText} className={`kinetiq-library-card ${selectedText?.motionPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setMotionPreset(preset.id)}><span className="text-[10px] font-semibold">{preset.name}</span><span className="text-[8px] opacity-45">{preset.engine === "react-bits-adapter" ? "React Bits" : "Native"}</span></button>)}</div>
           </div>}
 
-          {active === "ui" && <div className="kinetiq-tool-section"><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Product UI</div>{uiPresets.map((item) => <button key={item.preset} type="button" className="kinetiq-library-card" onClick={() => applyUiPreset(item.preset, item.label)}><span className="text-[10px] font-semibold">{item.label}</span><span className="text-[8px] opacity-45">{item.hint}</span></button>)}</div><div className="kinetiq-coming-card"><span>Apple UI kit</span><span>Figma source pack next</span></div></div>}
+          {active === "ui" && <div className="kinetiq-tool-section"><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Product UI</div>{uiPresets.map((item) => <button key={item.preset} type="button" className="kinetiq-library-card" onClick={() => applyUiPreset(item.preset, item.label)}><span className="text-[10px] font-semibold">{item.label}</span><span className="text-[8px] opacity-45">{item.hint}</span></button>)}</div></div>}
 
           {active === "elements" && <div className="kinetiq-tool-section"><div className="kinetiq-grid-2"><button type="button" className="kinetiq-element-card" onClick={() => setShape("rectangle", "#8067ff", 28)}>▰<span>Rectangle</span></button><button type="button" className="kinetiq-element-card" onClick={() => setShape("circle", "#d7ff45", 999)}>●<span>Circle</span></button><button type="button" className="kinetiq-element-card" onClick={() => setShape("pill", "#f7f7f4", 999)}>▬<span>Pill</span></button><button type="button" className="kinetiq-element-card" onClick={() => setShape("rectangle", "#0b0b0f", 48)}>□<span>Card</span></button></div></div>}
 
-          {active === "backgrounds" && <div className="kinetiq-tool-section"><div className="kinetiq-background-grid">{backgroundPresets.map((preset) => <button key={preset.id} type="button" className={`kinetiq-background-card ${scene.backgroundPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setBackgroundPreset(preset.id)}><span className={`kinetiq-background-swatch ${preset.className}`} /><span>{preset.name}</span></button>)}</div></div>}
+          {active === "backgrounds" && <div className="kinetiq-tool-section"><div className="kinetiq-background-grid">{backgroundPresets.map((preset) => <button key={preset.id} type="button" className={`kinetiq-background-card ${scene.backgroundPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setBackgroundPreset(preset.id)}><span className="kinetiq-background-swatch" style={{ backgroundColor: preset.backgroundColor, backgroundImage: preset.backgroundImage, backgroundSize: preset.backgroundSize }} /><span>{preset.name}</span></button>)}</div></div>}
 
           {active === "motion" && <div className="kinetiq-tool-section"><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Entrance & text effects</div>{motionPresets.map((preset) => <button key={preset.id} type="button" disabled={!selectedText} className={`kinetiq-library-card ${selectedText?.motionPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setMotionPreset(preset.id)}><span className="text-[10px] font-semibold">{preset.name}</span><span className="text-[8px] opacity-45">{preset.description}</span></button>)}</div></div>}
 
@@ -246,7 +253,7 @@ export function EditorToolBrowser() {
             </>}
           </div>}
 
-          {active === "audio" && <div className="kinetiq-tool-section"><button type="button" className="kinetiq-primary-tool" onClick={() => audioRef.current?.click()}>＋ Import audio</button><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Smart sound</div><div className="kinetiq-coming-card"><span>Motion-aware SFX</span><span>Typing, pops, whooshes, UI taps</span></div></div></div>}
+          {active === "audio" && <div className="kinetiq-tool-section"><button type="button" className="kinetiq-primary-tool" onClick={() => audioRef.current?.click()}>＋ Import audio</button><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Typing sound</div>{!selectedText ? <div className="kinetiq-empty-card">Select a text component to configure synchronized typing sound.</div> : <><button type="button" className={`kinetiq-library-card ${selectedText.typingSfx?.enabled ? "is-selected" : ""}`} onClick={() => patchSelected((component) => component.type === "text" ? { ...component, typingSfx: { ...(component.typingSfx ?? { volume: 0.18, pitch: 1, enabled: false }), enabled: !(component.typingSfx?.enabled ?? false) } } : component)}><span className="text-[10px] font-semibold">Character clicks</span><span className="text-[8px] opacity-45">{selectedText.typingSfx?.enabled ? "On" : "Off"}</span></button><label className="kinetiq-range-label"><span>Volume</span><span>{Math.round((selectedText.typingSfx?.volume ?? 0.18) * 100)}%</span><input type="range" min="0" max="1" step="0.01" value={selectedText.typingSfx?.volume ?? 0.18} onChange={(event) => patchSelected((component) => component.type === "text" ? { ...component, typingSfx: { ...(component.typingSfx ?? { enabled: true, pitch: 1, volume: 0.18 }), volume: Number(event.target.value) } } : component)} /></label><label className="kinetiq-range-label"><span>Pitch</span><span>{(selectedText.typingSfx?.pitch ?? 1).toFixed(2)}×</span><input type="range" min="0.5" max="2" step="0.05" value={selectedText.typingSfx?.pitch ?? 1} onChange={(event) => patchSelected((component) => component.type === "text" ? { ...component, typingSfx: { ...(component.typingSfx ?? { enabled: true, pitch: 1, volume: 0.18 }), pitch: Number(event.target.value) } } : component)} /></label></>}</div></div>}
         </div>
       )}
     </div>

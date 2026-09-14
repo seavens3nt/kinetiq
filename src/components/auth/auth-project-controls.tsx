@@ -22,6 +22,7 @@ export function AuthProjectControls({ projectsButtonId, variant = "editor" }: Au
   const [status, setStatus] = useState<"guest" | "saved" | "saving" | "error">("guest");
   const [message, setMessage] = useState("");
   const [projects, setProjects] = useState<CloudProject[]>([]);
+  const [authBusy, setAuthBusy] = useState(false);
   const authDialogRef = useRef<HTMLDivElement>(null);
   const configured = isSupabaseConfigured();
 
@@ -54,15 +55,25 @@ export function AuthProjectControls({ projectsButtonId, variant = "editor" }: Au
   useEffect(() => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null);
-      setStatus(data.user ? "saved" : "guest");
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setStatus(data.session?.user ? "saved" : "guest");
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setStatus(session?.user ? "saved" : "guest");
     });
     return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const authError = search.get("error_description") ?? hash.get("error_description");
+    if (!authError) return;
+    setMessage(authError);
+    setAuthOpen(true);
+    window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
   const syncProject = async () => {
@@ -96,24 +107,32 @@ export function AuthProjectControls({ projectsButtonId, variant = "editor" }: Au
     const supabase = getSupabaseClient();
     if (!supabase) return setMessage("Supabase environment variables are not configured yet.");
     setMessage("");
-    const result = mode === "signup"
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
-    if (result.error) return setMessage(result.error.message);
-    if (mode === "signup" && !result.data.session) {
-      setMessage("Check your email to confirm your account, then sign in.");
-      setMode("signin");
-      return;
+    setAuthBusy(true);
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const result = mode === "signup"
+        ? await supabase.auth.signUp({ email: normalizedEmail, password, options: { emailRedirectTo: `${window.location.origin}/studio` } })
+        : await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      if (result.error) return setMessage(result.error.message);
+      if (mode === "signup" && !result.data.session) {
+        setMessage("Check your email to confirm your account, then return to Kinetiq.");
+        setMode("signin");
+        return;
+      }
+      setAuthOpen(false);
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not connect to Kinetiq Cloud.");
+    } finally {
+      setAuthBusy(false);
     }
-    setAuthOpen(false);
-    setEmail("");
-    setPassword("");
   };
 
   const signInWithGoogle = async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return setMessage("Supabase environment variables are not configured yet.");
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/studio` } });
     if (error) setMessage(error.message);
   };
 
@@ -121,7 +140,7 @@ export function AuthProjectControls({ projectsButtonId, variant = "editor" }: Au
     const supabase = getSupabaseClient();
     if (!supabase) return setMessage("Supabase environment variables are not configured yet.");
     if (!email) return setMessage("Enter your email first.");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: `${window.location.origin}/studio` });
     setMessage(error ? error.message : "Password reset email sent.");
   };
 
@@ -182,9 +201,9 @@ export function AuthProjectControls({ projectsButtonId, variant = "editor" }: Au
       {authOpen && <div className="fixed inset-0 z-[100] grid place-items-center bg-black/65 p-4 backdrop-blur-sm"><div ref={authDialogRef} role="dialog" aria-modal="true" aria-labelledby="kinetiq-auth-title" className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#121218] p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-4"><div><h2 id="kinetiq-auth-title" className="text-lg font-semibold">{mode === "signin" ? "Welcome back" : "Create your Kinetiq account"}</h2><p className="mt-1 text-xs text-white/40">Sign in to save projects and media to the cloud.</p></div><button aria-label="Close sign-in dialog" onClick={() => setAuthOpen(false)} className="text-white/35 hover:text-white">×</button></div>
         {!configured && <div className="mt-4 rounded-lg border border-[#D7FF45]/20 bg-[#D7FF45]/[0.05] p-3 text-[10px] leading-4 text-[#D7FF45]/80">Supabase is not configured yet. Add the public Supabase environment variables in Vercel before using authentication.</div>}
-        <button onClick={signInWithGoogle} className="mt-5 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs font-medium hover:border-[#8067FF]/50 hover:bg-[#8067FF]/10">Continue with Google</button>
+        <button type="button" onClick={signInWithGoogle} className="mt-5 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs font-medium hover:border-[#8067FF]/50 hover:bg-[#8067FF]/10">Continue with Google</button>
         <div className="my-4 flex items-center gap-3 text-[10px] text-white/25"><span className="h-px flex-1 bg-white/10" />or continue with email<span className="h-px flex-1 bg-white/10" /></div>
-        <div className="space-y-3"><label className="sr-only" htmlFor="kinetiq-email">Email</label><input id="kinetiq-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs outline-none focus:border-[#D7FF45]/60" /><label className="sr-only" htmlFor="kinetiq-password">Password</label><input id="kinetiq-password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs outline-none focus:border-[#D7FF45]/60" />{message && <div className={`text-[10px] leading-4 ${message.includes("sent") || message.includes("confirm") ? "text-[#D7FF45]" : "text-red-300"}`}>{message}</div>}<button onClick={submitEmailAuth} disabled={!email || password.length < 6} className="w-full rounded-lg bg-[#D7FF45] px-3 py-2.5 text-xs font-bold text-[#0B0B0F] disabled:opacity-40">{mode === "signin" ? "Sign in" : "Create account"}</button></div>
+        <form onSubmit={(event) => { event.preventDefault(); void submitEmailAuth(); }} className="space-y-3"><label className="sr-only" htmlFor="kinetiq-email">Email</label><input id="kinetiq-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" placeholder="Email" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs outline-none focus:border-[#D7FF45]/60" /><label className="sr-only" htmlFor="kinetiq-password">Password</label><input id="kinetiq-password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Password" className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs outline-none focus:border-[#D7FF45]/60" />{message && <div role="status" className={`text-[10px] leading-4 ${message.includes("sent") || message.includes("confirm") ? "text-[#D7FF45]" : "text-red-300"}`}>{message}</div>}<button type="submit" disabled={authBusy || !email.trim() || password.length < 6} className="w-full rounded-lg bg-[#D7FF45] px-3 py-2.5 text-xs font-bold text-[#0B0B0F] disabled:opacity-40">{authBusy ? "Connecting…" : mode === "signin" ? "Sign in" : "Create account"}</button></form>
         {mode === "signin" && <button onClick={resetPassword} className="mt-3 w-full text-center text-[10px] text-white/35 hover:text-[#D7FF45]">Forgot password?</button>}
         <button onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(""); }} className="mt-3 w-full text-center text-[10px] text-white/40 hover:text-[#D7FF45]">{mode === "signin" ? "New to Kinetiq? Create an account" : "Already have an account? Sign in"}</button>
       </div></div>}

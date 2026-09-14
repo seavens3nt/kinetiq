@@ -47,6 +47,8 @@ function makeTextComponent(index = 0, overrides: Partial<TextComponent> = {}): T
     duration: 2.8,
     motionPresetId: "split-rise",
     motionSettings: { ...defaultMotionSettings },
+    wordStyles: [],
+    typingSfx: { enabled: true, volume: 0.18, pitch: 1 },
     ...overrides,
   };
 }
