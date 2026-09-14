@@ -6,7 +6,12 @@ import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { deleteCloudProject, listCloudProjects, persistProjectBlobAssets, saveProjectToCloud, type CloudProject } from "@/lib/supabase/project-sync";
 import { useEditorStore } from "@/store/editor-store";
 
-export function AuthProjectControls() {
+type AuthProjectControlsProps = {
+  projectsButtonId?: string;
+  variant?: "editor" | "launcher";
+};
+
+export function AuthProjectControls({ projectsButtonId, variant = "editor" }: AuthProjectControlsProps = {}) {
   const project = useEditorStore((state) => state.project);
   const [user, setUser] = useState<User | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -168,9 +173,9 @@ export function AuthProjectControls() {
   return (
     <>
       <div className="flex items-center gap-2">
-        <span className={`hidden text-[10px] sm:inline ${status === "error" ? "text-red-300" : status === "saving" ? "text-[#D7FF45]" : "text-white/35"}`}>{!user ? "Guest" : status === "saving" ? "Saving…" : status === "saved" ? "Saved ✓" : "Save error"}</span>
-        <button onClick={saveNow} className="rounded-full border border-[#D7FF45]/30 bg-[#D7FF45]/10 px-3 py-1.5 text-[10px] font-medium text-[#D7FF45] hover:bg-[#D7FF45]/15">Save</button>
-        <button onClick={openProjects} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10px] text-white/55 hover:border-[#8067FF]/40 hover:text-white">My Projects</button>
+        {variant === "editor" && <span className={`hidden text-[10px] sm:inline ${status === "error" ? "text-red-300" : status === "saving" ? "text-[#D7FF45]" : "text-white/35"}`}>{!user ? "Guest" : status === "saving" ? "Saving…" : status === "saved" ? "Saved ✓" : "Save error"}</span>}
+        {variant === "editor" && <button onClick={saveNow} className="rounded-full border border-[#D7FF45]/30 bg-[#D7FF45]/10 px-3 py-1.5 text-[10px] font-medium text-[#D7FF45] hover:bg-[#D7FF45]/15">Save</button>}
+        <button id={projectsButtonId} onClick={openProjects} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10px] text-white/55 hover:border-[#8067FF]/40 hover:text-white">My Projects</button>
         {user ? <button onClick={signOut} title={user.email ?? "Signed in"} className="rounded-full border border-[#8067FF]/30 bg-[#8067FF]/10 px-3 py-1.5 text-[10px] text-[#C7BEFF] hover:border-[#D7FF45]/40 hover:text-[#D7FF45]">{accountLabel} · Sign out</button> : <button onClick={() => setAuthOpen(true)} className="rounded-full bg-[#8067FF] px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-[#8f79ff]">Sign in</button>}
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AuthProjectControls } from "@/components/auth/auth-project-controls";
 
 const formats = [
   { id: "16:9", width: 1920, height: 1080, title: "Landscape", platforms: "YouTube · Product demo" },
@@ -27,7 +28,7 @@ export function ProjectStartScreen({ onStart }: ProjectStartScreenProps) {
 
   const shell = (content: React.ReactNode) => (
     <main className="min-h-screen bg-[#09090c] text-[#f5f5f2]">
-      <header className="flex h-14 items-center border-b border-white/[0.07] bg-[#0e0e13] px-4 pr-[440px] lg:px-5 lg:pr-[440px]">
+      <header className="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0e0e13] px-4 py-2 lg:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#D7FF45] text-sm font-black text-[#0B0B0F] shadow-[0_0_24px_rgba(215,255,69,0.08)]">K</div>
           <div className="min-w-0">
@@ -37,6 +38,7 @@ export function ProjectStartScreen({ onStart }: ProjectStartScreenProps) {
           <div className="ml-3 hidden h-5 w-px bg-white/[0.07] sm:block" />
           <div className="hidden text-[11px] text-white/35 sm:block">{step === "home" ? "Home" : step === "new-video" ? "New project" : "Blank canvas"}</div>
         </div>
+        <AuthProjectControls projectsButtonId="kinetiq-launcher-projects" variant="launcher" />
       </header>
 
       <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-[190px_1fr] xl:grid-cols-[210px_1fr]">
@@ -55,7 +57,11 @@ export function ProjectStartScreen({ onStart }: ProjectStartScreenProps) {
               <button
                 key={item.label}
                 type="button"
-                onClick={() => item.label === "Home" && setStep("home")}
+                disabled={item.muted}
+                onClick={() => {
+                  if (item.label === "Home") setStep("home");
+                  if (item.label === "Projects") document.getElementById("kinetiq-launcher-projects")?.click();
+                }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[11px] transition ${item.label === "Home" && step === "home" ? "bg-white/[0.065] text-white" : item.muted ? "cursor-default text-white/20" : "text-white/45 hover:bg-white/[0.035] hover:text-white/75"}`}
               >
                 <span className="w-4 text-center text-xs">{item.icon}</span>
