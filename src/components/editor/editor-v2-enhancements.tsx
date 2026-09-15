@@ -40,6 +40,10 @@ const uiPresets: Array<{ preset: UIComponent["preset"]; label: string; hint: str
   { preset: "apple-control", label: "Apple controls", hint: "Segmented control and toggle" },
   { preset: "figma-panel", label: "Figma panel", hint: "Design inspector surface" },
   { preset: "cursor", label: "Product cursor", hint: "Pointer and click target" },
+  { preset: "device-phone", label: "3D phone", hint: "Drop an image, video, or prototype" },
+  { preset: "device-macbook", label: "3D MacBook", hint: "Laptop product frame" },
+  { preset: "device-ipad", label: "3D iPad", hint: "Tablet product frame" },
+  { preset: "pointer", label: "Animated pointer", hint: "Cursor with motion presets" },
 ];
 
 function uid(prefix: string) {
@@ -157,6 +161,11 @@ export function EditorToolBrowser() {
       if (audioOnly || (!file.type.startsWith("image/") && !file.type.startsWith("video/"))) return;
       const type = file.type.startsWith("image/") ? "image" : "video";
       const state = useEditorStore.getState();
+      const selected = state.project.scenes[0].layers.flatMap((layer) => layer.components).find((component) => component.id === state.selectedComponentId);
+      if (selected?.type === "ui" && ["device-phone", "device-macbook", "device-ipad"].includes(selected.preset)) {
+        patchSelected((component) => component.type === "ui" ? { ...component, name: `${component.label} · ${file.name}`, mediaSrc: src, mediaKind: type, deviceMotion: component.deviceMotion ?? "float" } : component);
+        return;
+      }
       state.addComponentToSelectedLayer(type);
       patchSelected((component) => ({
         ...component,
@@ -169,7 +178,7 @@ export function EditorToolBrowser() {
   };
 
   const applyUiPreset = (preset: UIComponent["preset"], label: string) => {
-    addConfiguredComponent("ui", (component) => component.type === "ui" ? { ...component, preset, label, name: label } : component);
+    addConfiguredComponent("ui", (component) => component.type === "ui" ? { ...component, preset, label, name: label, deviceMotion: preset.startsWith("device-") ? "float" : component.deviceMotion, pointerMotion: preset === "pointer" ? "click" : component.pointerMotion } : component);
   };
 
   const setShape = (shape: "rectangle" | "circle" | "pill", fill: string, radius: number) => {
@@ -194,6 +203,13 @@ export function EditorToolBrowser() {
       const current = component[key] ?? { type: "fade" as TransitionType, duration: 0.35 };
       return { ...component, [key]: { ...current, duration } } as VisualComponent;
     });
+  };
+
+  const attachPrototype = () => {
+    if (!selectedComponent || selectedComponent.type !== "ui" || !["device-phone", "device-macbook", "device-ipad"].includes(selectedComponent.preset)) return;
+    const url = window.prompt("Paste a prototype or hosted preview URL");
+    if (!url?.trim()) return;
+    patchSelected((component) => component.type === "ui" ? { ...component, mediaSrc: url.trim(), mediaKind: "prototype", name: `${component.label} · Prototype` } : component);
   };
 
   return (
@@ -225,6 +241,7 @@ export function EditorToolBrowser() {
 
           {active === "media" && <div className="kinetiq-tool-section">
             <button type="button" className="kinetiq-primary-tool" onClick={() => mediaRef.current?.click()}>＋ Import image or video</button>
+            <button type="button" disabled={!selectedComponent || selectedComponent.type !== "ui" || !["device-phone", "device-macbook", "device-ipad"].includes(selectedComponent.preset)} className="kinetiq-library-card mt-2 w-full disabled:cursor-not-allowed disabled:opacity-35" onClick={attachPrototype}><span className="text-[10px] font-semibold">＋ Attach prototype URL</span><span className="text-[8px] opacity-45">Figma, Framer, or hosted preview</span></button>
             <div className="kinetiq-drop-card"><div className="text-lg">▧</div><div className="mt-2 text-[10px] font-semibold">Your media</div><div className="mt-1 text-[9px] opacity-55">Imported files become reusable timeline components.</div></div>
           </div>}
 

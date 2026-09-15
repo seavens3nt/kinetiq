@@ -69,7 +69,7 @@ function makeComponent(type: AddableComponentType, index = 0, startTime = 0): Vi
   if (type === "image") return { ...base, type, src: null, fit: "contain" };
   if (type === "video") return { ...base, type, src: null, muted: true };
   if (type === "shape") return { ...base, type, shape: "rectangle", fill: "#8067ff", radius: 32 };
-  return { ...base, type: "ui", preset: "notification", label: "Notification" };
+  return { ...base, type: "ui", preset: "notification", label: "Notification", mediaSrc: null, deviceMotion: "none", pointerMotion: "none" };
 }
 
 function makeBlankProject(width = 1080, height = 1920): Project {

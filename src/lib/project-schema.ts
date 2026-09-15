@@ -113,8 +113,12 @@ export const ShapeComponentSchema = TimedComponentSchema.extend({
 
 export const UIComponentSchema = TimedComponentSchema.extend({
   type: z.literal("ui"),
-  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph", "notification-stack", "otp", "apple-control", "figma-panel", "cursor"]),
+  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph", "notification-stack", "otp", "apple-control", "figma-panel", "cursor", "device-phone", "device-macbook", "device-ipad", "pointer"]),
   label: z.string(),
+  mediaSrc: z.string().nullable().optional(),
+  mediaKind: z.enum(["image", "video", "prototype"]).optional(),
+  deviceMotion: z.enum(["none", "float", "jump", "tilt", "pulse"]).optional(),
+  pointerMotion: z.enum(["none", "click", "hover", "drag", "bounce"]).optional(),
 });
 
 export const VisualComponentSchema = z.discriminatedUnion("type", [

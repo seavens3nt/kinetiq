@@ -27,13 +27,34 @@ function clamp(value: number, min: number, max: number) {
 
 const transitions: TransitionType[] = ["none", "fade", "dissolve", "slide", "zoom", "chromatic-blur", "color-smear"];
 
-function uiPreview(component: UIComponent) {
+function uiPreview(component: UIComponent, localTime = 0) {
+  const pointerMotion = component.pointerMotion ?? "none";
+  const pointerProgress = Math.min(1, Math.max(0, localTime * 1.8));
+  if (["device-phone", "device-macbook", "device-ipad"].includes(component.preset)) {
+    const deviceClass = component.preset === "device-macbook" ? "aspect-[1.55/1] rounded-[1.1rem]" : component.preset === "device-ipad" ? "aspect-[0.78/1] rounded-[1.5rem]" : "aspect-[0.52/1] rounded-[1.8rem]";
+    const motion = component.deviceMotion ?? "none";
+    const deviceStyle: CSSProperties = { transform: motion === "jump" ? `translateY(${Math.sin(localTime * Math.PI * 2) * -10}px)` : motion === "float" ? `translateY(${Math.sin(localTime * Math.PI * 2) * -5}px) rotate(${Math.sin(localTime * Math.PI) * 1.4}deg)` : motion === "tilt" ? `rotateY(${Math.sin(localTime * Math.PI * 2) * 7}deg) rotateX(${Math.cos(localTime * Math.PI * 2) * 2}deg)` : motion === "pulse" ? `scale(${1 + Math.sin(localTime * Math.PI * 2) * 0.025})` : undefined, transformStyle: "preserve-3d", perspective: 900 };
+    return <div className="grid h-full w-full place-items-center" style={{ perspective: 900 }}><div className={`relative h-[92%] w-[82%] border-[7px] border-[#25252d] bg-[#09090c] shadow-[0_22px_45px_rgba(0,0,0,.45)] ${deviceClass}`} style={deviceStyle}><div className="absolute inset-[3%] overflow-hidden rounded-[inherit] bg-[#171722]"><div className="grid h-full place-items-center bg-gradient-to-br from-[#8067ff]/30 via-[#171722] to-[#d7ff45]/15 text-center text-[9px] text-white/45">{component.mediaSrc ? (component.mediaKind === "video" ? <video src={component.mediaSrc} autoPlay loop muted playsInline className="h-full w-full object-cover" /> : component.mediaKind === "prototype" ? <iframe src={component.mediaSrc} title={component.label} className="h-full w-full border-0 bg-white" /> : <img src={component.mediaSrc} alt={component.label} className="h-full w-full object-cover" />) : <span>Drop media<br />or prototype</span>}</div></div><div className="absolute left-1/2 top-[1.5%] h-1.5 w-1/4 -translate-x-1/2 rounded-full bg-black/70" /></div></div>;
+  }
+  if (component.preset === "pointer") return <div className="grid place-items-center" style={{ transform: pointerMotion === "click" ? `scale(${1 - Math.sin(pointerProgress * Math.PI) * .18})` : pointerMotion === "bounce" ? `translateY(${Math.sin(pointerProgress * Math.PI * 2) * -8}px)` : pointerMotion === "hover" ? `translate(${Math.sin(pointerProgress * Math.PI * 2) * 10}px, ${Math.cos(pointerProgress * Math.PI * 2) * 6}px)` : pointerMotion === "drag" ? `translateX(${pointerProgress * 22 - 11}px)` : undefined }}><div className="relative h-14 w-14"><span className="absolute left-3 top-1 text-4xl font-black text-white drop-shadow-[2px_3px_0_#0b0b0f]">↖</span><span className="absolute -bottom-1 left-7 rounded bg-[#8067FF] px-2 py-1 text-[7px] font-semibold text-white">{pointerMotion === "drag" ? "Drag" : pointerMotion === "hover" ? "Hover" : "Click"}</span></div></div>;
   if (component.preset === "notification-stack") return <div className="space-y-1.5">{["Export complete", "Comment added", "Version saved"].map((label, index) => <div key={label} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[.06] p-2" style={{ transform: `translateX(${index * 6}px)` }}><span className="h-2 w-2 rounded-full bg-[#D7FF45]" /><span className="text-[9px] font-medium">{label}</span></div>)}</div>;
   if (component.preset === "otp") return <div><div className="text-[8px] uppercase tracking-[.18em] text-white/40">Verification code</div><div className="mt-3 grid grid-cols-6 gap-1">{"483920".split("").map((digit, index) => <span key={`${digit}-${index}`} className="grid aspect-square place-items-center rounded-md border border-white/15 bg-white/[.05] text-xs font-bold">{digit}</span>)}</div></div>;
   if (component.preset === "apple-control") return <div className="space-y-3"><div className="grid grid-cols-3 rounded-lg bg-white/10 p-1 text-center text-[8px]"><span className="rounded-md bg-white px-2 py-1 text-black">Motion</span><span className="px-2 py-1">Style</span><span className="px-2 py-1">Audio</span></div><div className="flex items-center justify-between text-[9px]"><span>Auto animate</span><span className="h-4 w-8 rounded-full bg-[#D7FF45] p-0.5"><i className="ml-auto block h-3 w-3 rounded-full bg-black" /></span></div></div>;
   if (component.preset === "figma-panel") return <div className="space-y-2 text-[8px]"><div className="flex justify-between"><span className="text-white/40">Position</span><span>120 × 320</span></div><div className="grid grid-cols-2 gap-1"><span className="rounded border border-white/10 p-1.5">W 760</span><span className="rounded border border-white/10 p-1.5">H 420</span></div><div className="h-1.5 rounded-full bg-[#8067FF]" /></div>;
   if (component.preset === "cursor") return <div className="grid place-items-center"><div className="relative h-12 w-12 rounded-full border border-[#D7FF45]/50 bg-[#D7FF45]/10"><span className="absolute left-4 top-3 text-xl">↖</span><span className="absolute -bottom-3 left-8 rounded bg-[#8067FF] px-2 py-1 text-[7px]">Click</span></div></div>;
   return <><div className="text-[9px] uppercase tracking-[0.16em] text-[#D7FF45]">{component.preset}</div><div className="mt-2 text-sm font-semibold">{component.label}</div><div className="mt-2 h-2 w-2/3 rounded-full bg-[#8067FF]/50" /></>;
+}
+
+function keyframeTransform(component: VisualComponent, currentTime: number) {
+  const keyframes = component.keyframes ?? [];
+  if (!keyframes.length) return { x: component.x, y: component.y, scale: 1, opacity: component.opacity ?? 1 };
+  const local = clamp(currentTime - component.startTime, 0, component.duration);
+  const ordered = [...keyframes].sort((a, b) => a.time - b.time);
+  const before = [...ordered].reverse().find((keyframe) => keyframe.time <= local) ?? ordered[0];
+  const after = ordered.find((keyframe) => keyframe.time >= local) ?? ordered[ordered.length - 1];
+  const span = Math.max(0.001, after.time - before.time);
+  const t = before === after ? 0 : clamp((local - before.time) / span, 0, 1);
+  return { x: before.x + (after.x - before.x) * t, y: before.y + (after.y - before.y) * t, scale: before.scale + (after.scale - before.scale) * t, opacity: before.opacity + (after.opacity - before.opacity) * t };
 }
 
 type CanvasGuide = { x?: number; y?: number } | null;
@@ -455,14 +476,15 @@ export function MotionPlayground() {
 
               {visibleComponents.map(({ component, layerId }, index) => {
                 const isSelected = selectedComponentId === component.id;
-                const left = `${(component.x / project.width) * 100}%`;
-                const top = `${(component.y / project.height) * 100}%`;
+                const animated = keyframeTransform(component, currentTime);
+                const left = `${(animated.x / project.width) * 100}%`;
+                const top = `${(animated.y / project.height) * 100}%`;
                 const width = `${Math.min(95, (component.width / project.width) * 100)}%`;
                 const height = `${Math.min(90, (component.height / project.height) * 100)}%`;
                 const transition = transitionStyle(component);
                 const transitionOpacity = typeof transition.opacity === "number" ? transition.opacity : 1;
                 const transitionTransform = transition.transform ? `${transition.transform} ` : "";
-                const shared = { ...transition, left, top, width, height, opacity: transitionOpacity * (component.opacity ?? 1), transform: `${transitionTransform}rotate(${component.rotation ?? 0}deg)`, transformOrigin: "center center" };
+                const shared = { ...transition, left, top, width, height, opacity: transitionOpacity * animated.opacity, transform: `${transitionTransform}scale(${animated.scale}) rotate(${component.rotation ?? 0}deg)`, transformOrigin: "center center" };
                 const select = () => setSelectedComponent(component.id, layerId);
 
                 if (component.type === "text") {
@@ -475,7 +497,7 @@ export function MotionPlayground() {
                   return <button key={component.id} onClick={select} className={`absolute overflow-hidden rounded-xl bg-black ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={shared}><video src={component.src} muted={component.muted} autoPlay loop playsInline onLoadedMetadata={(event) => { event.currentTarget.playbackRate = component.playbackRate ?? 1; }} className="h-full w-full object-contain" /></button>;
                 }
                 if (component.type === "shape") return <button key={component.id} onClick={select} className={`absolute ${isSelected ? "ring-1 ring-[#D7FF45]/35" : ""}`} style={{ ...shared, background: component.fill, borderRadius: component.shape === "circle" ? "999px" : component.shape === "pill" ? "999px" : component.radius }} />;
-                if (component.type === "ui") return <button key={component.id} onClick={select} className={`absolute rounded-2xl border bg-[#111216]/90 p-4 text-left shadow-xl backdrop-blur ${isSelected ? "border-[#D7FF45]/60" : "border-white/15"}`} style={shared}>{uiPreview(component)}</button>;
+                if (component.type === "ui") return <button key={component.id} onClick={select} className={`absolute rounded-2xl border bg-[#111216]/90 p-4 text-left shadow-xl backdrop-blur ${isSelected ? "border-[#D7FF45]/60" : "border-white/15"}`} style={shared}>{uiPreview(component, currentTime - component.startTime)}</button>;
                 return <button key={component.id} onClick={select} className={`absolute grid place-items-center rounded-2xl border border-dashed bg-black/20 text-center ${isSelected ? "border-[#D7FF45] text-[#D7FF45]" : "border-white/20 text-white/35"}`} style={shared}><div><div className="text-xl">{component.type === "image" ? "▧" : "▶"}</div><div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]">{component.type}</div><div className="mt-1 text-[9px] opacity-60">Drop or import media</div></div></button>;
               })}
 
@@ -537,6 +559,10 @@ export function MotionPlayground() {
 
                   {selectedComponent.type === "video" && <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Speed</p><div className="rounded-lg border border-white/10 bg-white/[0.025] p-3"><div className="mb-2 flex justify-between text-[10px] text-white/55"><span>Playback rate</span><span>{(selectedComponent.playbackRate ?? 1).toFixed(2)}×</span></div><input type="range" min="0.25" max="4" step="0.25" value={selectedComponent.playbackRate ?? 1} onPointerDown={checkpoint} onChange={(event) => updateComponent((component) => component.type === "video" ? { ...component, playbackRate: Number(event.target.value) } : component)} className="w-full accent-[#8067FF]" /></div></div>}
 
+                  {selectedComponent.type === "ui" && ["device-phone", "device-macbook", "device-ipad"].includes(selectedComponent.preset) && <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">3D device motion</p><div className="rounded-lg border border-white/10 bg-white/[0.025] p-3"><select value={selectedComponent.deviceMotion ?? "none"} onChange={(event) => { checkpoint(); updateComponent((component) => component.type === "ui" ? { ...component, deviceMotion: event.target.value as NonNullable<UIComponent["deviceMotion"]> } : component); }} className="w-full rounded-md border border-white/10 bg-[#15151B] px-2 py-1.5 text-[10px] text-white"><option value="none">None</option><option value="float">Float</option><option value="jump">Jump and settle</option><option value="tilt">3D tilt</option><option value="pulse">Soft pulse</option></select><p className="mt-2 text-[9px] leading-4 text-white/35">Select the device, then use Import image or video to place content inside its screen.</p></div></div>}
+
+                  {selectedComponent.type === "ui" && selectedComponent.preset === "pointer" && <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Pointer motion</p><div className="rounded-lg border border-white/10 bg-white/[0.025] p-3"><select value={selectedComponent.pointerMotion ?? "none"} onChange={(event) => { checkpoint(); updateComponent((component) => component.type === "ui" ? { ...component, pointerMotion: event.target.value as NonNullable<UIComponent["pointerMotion"]> } : component); }} className="w-full rounded-md border border-white/10 bg-[#15151B] px-2 py-1.5 text-[10px] text-white"><option value="none">None</option><option value="click">Click pulse</option><option value="hover">Hover drift</option><option value="drag">Drag sweep</option><option value="bounce">Bounce</option></select><p className="mt-2 text-[9px] leading-4 text-white/35">Add transform keyframes below for exact pointer paths and timing.</p></div></div>}
+
                   <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Transitions</p><div className="space-y-3 rounded-lg border border-white/10 bg-white/[0.025] p-3">
                     {(["transitionIn", "transitionOut"] as const).map((side) => {
                       const value = selectedComponent[side] ?? { type: "none" as const, duration: 0.35 };
@@ -544,7 +570,7 @@ export function MotionPlayground() {
                     })}
                   </div></div>
 
-                  <div><div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Keyframes</p><button onClick={addKeyframe} className="rounded-md border border-[#8067FF]/35 bg-[#8067FF]/10 px-2 py-1 text-[9px] text-[#C7BEFF] hover:border-[#D7FF45]/50 hover:text-[#D7FF45]">◆ Add at playhead</button></div><div className="rounded-lg border border-white/10 bg-white/[0.025] p-3 text-[10px] text-white/40">{selectedComponent.keyframes?.length ? `${selectedComponent.keyframes.length} transform keyframe${selectedComponent.keyframes.length === 1 ? "" : "s"} on this clip.` : "No keyframes yet. Add one, move the playhead, then add another to build transform animation."}</div></div>
+                  <div><div className="mb-2 flex items-center justify-between"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Keyframes</p><button onClick={addKeyframe} className="rounded-md border border-[#8067FF]/35 bg-[#8067FF]/10 px-2 py-1 text-[9px] text-[#C7BEFF] hover:border-[#D7FF45]/50 hover:text-[#D7FF45]">◆ Add at playhead</button></div><div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.025] p-3 text-[10px] text-white/40">{selectedComponent.keyframes?.length ? selectedComponent.keyframes.map((keyframe) => <div key={keyframe.id} className="grid grid-cols-[54px_1fr_1fr_1fr] items-center gap-1.5"><span className="text-[9px] text-white/55">{keyframe.time.toFixed(2)}s</span><input aria-label="Keyframe x" type="number" value={Math.round(keyframe.x)} onChange={(event) => updateComponent((component) => ({ ...component, keyframes: (component.keyframes ?? []).map((item) => item.id === keyframe.id ? { ...item, x: Number(event.target.value) } : item) }) as VisualComponent)} className="w-full rounded border border-white/10 bg-[#15151B] px-1.5 py-1 text-[9px]" /><input aria-label="Keyframe y" type="number" value={Math.round(keyframe.y)} onChange={(event) => updateComponent((component) => ({ ...component, keyframes: (component.keyframes ?? []).map((item) => item.id === keyframe.id ? { ...item, y: Number(event.target.value) } : item) }) as VisualComponent)} className="w-full rounded border border-white/10 bg-[#15151B] px-1.5 py-1 text-[9px]" /><button type="button" onClick={() => updateComponent((component) => ({ ...component, keyframes: (component.keyframes ?? []).filter((item) => item.id !== keyframe.id) }) as VisualComponent)} className="rounded border border-white/10 px-1.5 py-1 text-[9px] text-white/40 hover:border-red-300/50 hover:text-red-200">Remove</button></div>) : <span>No keyframes yet. Add one, move the playhead, then adjust its X/Y or add another for a custom path.</span>}</div></div>
                 </>
               ) : <div className="text-xs text-white/35">Nothing selected yet. Drop media or add a component from the timeline.</div>}
 
