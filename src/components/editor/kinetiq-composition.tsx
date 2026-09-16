@@ -26,6 +26,24 @@ function renderUi(component: UIComponent, time: number) {
   return <div style={{ height: "100%", borderRadius: 24, padding: 24, background: "rgba(17,18,22,.94)", border: "1px solid rgba(255,255,255,.15)", boxShadow: "0 20px 50px rgba(0,0,0,.3)" }}><div style={{ color: "#d7ff45", fontSize: 14, letterSpacing: 2, textTransform: "uppercase" }}>{component.preset}</div><div style={{ marginTop: 14, fontSize: 26, fontWeight: 700 }}>{component.label}</div><div style={{ marginTop: 22, height: 10, width: "65%", borderRadius: 99, background: "rgba(128,103,255,.55)" }} /></div>;
 }
 
+function renderMotionText(component: Extract<VisualComponent, { type: "text" }>, local: number) {
+  const duration = Math.max(.1, component.motionSettings.duration);
+  const progress = Math.min(1, Math.max(0, local / duration));
+  const words = component.content.split(/\s+/);
+  const styledWord = (word: string, index: number) => {
+    const override = component.wordStyles?.find((style) => style.wordIndex === index);
+    return <span key={`${word}-${index}`} style={{ color: override?.color, fontWeight: override?.fontWeight, fontSize: override?.fontSizeScale ? `${override.fontSizeScale}em` : undefined, opacity: override?.opacity }}>{word}</span>;
+  };
+  if (component.motionPresetId === "typing" || component.motionPresetId === "follow-type") return <span>{component.content.slice(0, Math.ceil(component.content.length * progress))}<i style={{ opacity: progress < 1 ? 1 : 0 }}>│</i></span>;
+  if (component.motionPresetId === "sentence-build") return <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: ".25em" }}>{words.map((word, index) => <span key={`${word}-${index}`} style={{ opacity: Math.min(1, Math.max(0, progress * words.length - index)), transform: `translateY(${(1 - Math.min(1, Math.max(0, progress * words.length - index))) * 24}px)` }}>{styledWord(word, index)}</span>)}</span>;
+  if (component.motionPresetId === "scatter-gather") return <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: ".25em" }}>{words.map((word, index) => { const angle = index / Math.max(1, words.length) * Math.PI * 2; return <span key={`${word}-${index}`} style={{ opacity: progress, transform: `translate(${Math.cos(angle) * (1 - progress) * 180}px, ${Math.sin(angle) * (1 - progress) * 130}px) rotate(${(1 - progress) * (index % 2 ? 18 : -18)}deg)` }}>{styledWord(word, index)}</span>; })}</span>;
+  if (component.motionPresetId === "word-swap") return <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: ".25em" }}>{words.map((word, index) => <span key={`${word}-${index}`} style={{ opacity: Math.min(1, progress * 2), transform: `translateY(${(1 - progress) * (index % 2 ? -42 : 42)}px) rotateX(${(1 - progress) * 75}deg)` }}>{styledWord(word, index)}</span>)}</span>;
+  if (component.motionPresetId === "anchor-reveal") return <span style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: ".25em" }}>{words.map((word, index) => <span key={`${word}-${index}`} style={{ opacity: index === 0 ? 1 : progress, transform: index === 0 ? undefined : `translateX(${(1 - progress) * 55}px)` }}>{styledWord(word, index)}</span>)}</span>;
+  if (component.motionPresetId === "text-pill") return <span style={{ display: "inline-block", borderRadius: 18, padding: ".18em .45em", background: "rgba(11,11,15,.92)", opacity: progress, transform: `scaleX(${.15 + progress * .85})` }}>{words.map((word, index) => <span key={`${word}-${index}`}>{index ? " " : ""}{styledWord(word, index)}</span>)}</span>;
+  if (component.motionPresetId === "blur-stagger" || component.motionPresetId === "blur-reveal" || component.motionPresetId === "decrypt") return <span style={{ opacity: progress, filter: `blur(${(1 - progress) * 18}px)` }}>{words.map((word, index) => <span key={`${word}-${index}`}>{index ? " " : ""}{styledWord(word, index)}</span>)}</span>;
+  return <span style={{ opacity: component.motionPresetId === "none" ? 1 : progress, transform: component.motionPresetId === "rise" ? `translateY(${(1 - progress) * 45}px)` : component.motionPresetId === "pop" ? `scale(${.72 + progress * .28})` : undefined }}>{words.map((word, index) => <span key={`${word}-${index}`}>{index ? " " : ""}{styledWord(word, index)}</span>)}</span>;
+}
+
 function Visual({ component, project, time }: { component: VisualComponent; project: Project; time: number }) {
   const animated = resolveKeyframeTransform(component, time);
   const local = time - component.startTime;
@@ -33,8 +51,10 @@ function Visual({ component, project, time }: { component: VisualComponent; proj
   const exitDuration = component.transitionOut?.duration ?? 0;
   const remaining = component.duration - local;
   const transitionOpacity = enterDuration > 0 && local < enterDuration ? Math.max(0, local / enterDuration) : exitDuration > 0 && remaining < exitDuration ? Math.max(0, remaining / exitDuration) : 1;
-  const style = { position: "absolute" as const, left: animated.x, top: animated.y, width: component.width, height: component.height, opacity: animated.opacity * transitionOpacity, transform: `scale(${animated.scale}) rotate(${animated.rotation}deg)`, transformOrigin: "center", color: "white", overflow: "hidden" };
-  if (component.type === "text") return <div style={{ ...style, display: "grid", placeItems: "center", overflow: "visible", color: component.color, fontSize: component.fontSize, fontWeight: component.fontWeight, lineHeight: 1.02, textAlign: "center" }}>{component.content}</div>;
+  const activeTransition = local < enterDuration ? component.transitionIn?.type : remaining < exitDuration ? component.transitionOut?.type : "none";
+  const transitionTransform = activeTransition === "slide" ? `translateX(${(1 - transitionOpacity) * 55}px)` : activeTransition === "zoom" ? `scale(${.88 + transitionOpacity * .12})` : activeTransition === "color-smear" ? `translateX(${(1 - transitionOpacity) * 70}px) scaleX(${1 + (1 - transitionOpacity) * .25})` : "";
+  const style = { position: "absolute" as const, left: animated.x, top: animated.y, width: component.width, height: component.height, opacity: animated.opacity * transitionOpacity, transform: `${transitionTransform} scale(${animated.scale}) rotate(${animated.rotation}deg)`, transformOrigin: "center", color: "white", overflow: "hidden", filter: activeTransition === "chromatic-blur" || activeTransition === "color-smear" ? `blur(${(1 - transitionOpacity) * 14}px)` : undefined };
+  if (component.type === "text") return <div style={{ ...style, display: "grid", placeItems: "center", overflow: "visible", color: component.color, fontSize: component.fontSize, fontWeight: component.fontWeight, lineHeight: 1.02, textAlign: "center" }}>{renderMotionText(component, local)}</div>;
   if (component.type === "image") return <div style={style}>{component.src ? <img src={component.src} alt="" style={{ width: "100%", height: "100%", objectFit: component.fit }} /> : null}</div>;
   if (component.type === "video") return <div style={style}>{component.src ? <Video src={component.src} muted={component.muted} playbackRate={component.playbackRate ?? 1} style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : null}</div>;
   if (component.type === "shape") return <div style={{ ...style, background: component.fill, borderRadius: component.shape === "rectangle" ? component.radius : 999 }} />;
