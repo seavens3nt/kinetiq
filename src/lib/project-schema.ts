@@ -50,7 +50,9 @@ export const TransformKeyframeSchema = z.object({
   x: z.number(),
   y: z.number(),
   scale: z.number().positive(),
+  rotation: z.number().min(-360).max(360).optional(),
   opacity: z.number().min(0).max(1),
+  easing: z.enum(["linear", "ease-out", "ease-in-out", "spring"]).optional(),
 });
 
 const TimedComponentSchema = z.object({
@@ -113,12 +115,19 @@ export const ShapeComponentSchema = TimedComponentSchema.extend({
 
 export const UIComponentSchema = TimedComponentSchema.extend({
   type: z.literal("ui"),
-  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph", "notification-stack", "otp", "apple-control", "figma-panel", "cursor", "device-phone", "device-macbook", "device-ipad", "pointer"]),
+  preset: z.enum(["notification", "statistic", "progress-card", "phone", "browser", "graph", "notification-stack", "otp", "apple-control", "figma-panel", "cursor", "device-phone", "device-macbook", "device-ipad", "pointer", "ios-sheet", "safari-window", "macos-menu", "app-card", "design-inspector"]),
   label: z.string(),
   mediaSrc: z.string().nullable().optional(),
   mediaKind: z.enum(["image", "video", "prototype"]).optional(),
+  mediaFit: z.enum(["contain", "cover"]).optional(),
+  mediaPositionX: z.number().min(0).max(100).optional(),
+  mediaPositionY: z.number().min(0).max(100).optional(),
+  screenPadding: z.number().min(0).max(16).optional(),
   deviceMotion: z.enum(["none", "float", "jump", "tilt", "pulse"]).optional(),
   pointerMotion: z.enum(["none", "click", "hover", "drag", "bounce"]).optional(),
+  pointerSize: z.number().min(0.5).max(3).optional(),
+  pointerTrail: z.boolean().optional(),
+  pointerClickRing: z.boolean().optional(),
 });
 
 export const VisualComponentSchema = z.discriminatedUnion("type", [

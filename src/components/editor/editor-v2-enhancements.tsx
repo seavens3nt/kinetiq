@@ -44,6 +44,11 @@ const uiPresets: Array<{ preset: UIComponent["preset"]; label: string; hint: str
   { preset: "device-macbook", label: "3D MacBook", hint: "Laptop product frame" },
   { preset: "device-ipad", label: "3D iPad", hint: "Tablet product frame" },
   { preset: "pointer", label: "Animated pointer", hint: "Cursor with motion presets" },
+  { preset: "ios-sheet", label: "iOS sheet", hint: "Native bottom sheet surface" },
+  { preset: "safari-window", label: "Safari window", hint: "macOS browser chrome" },
+  { preset: "macos-menu", label: "macOS menu", hint: "Floating desktop menu" },
+  { preset: "app-card", label: "App card", hint: "Store-style product tile" },
+  { preset: "design-inspector", label: "Design inspector", hint: "Layers and properties panel" },
 ];
 
 function uid(prefix: string) {
@@ -79,6 +84,28 @@ function addConfiguredComponent(type: "text" | "shape" | "ui", configure?: (comp
   const store = useEditorStore.getState();
   store.addComponentToSelectedLayer(type);
   if (configure) patchSelected(configure);
+}
+
+type SequencePreset = "logo-build" | "phone-demo" | "otp-flow" | "notification-brand";
+
+function insertSequencePreset(preset: SequencePreset) {
+  const store = useEditorStore.getState();
+  store.checkpoint();
+  useEditorStore.setState((state) => {
+    const scene = state.project.scenes[0];
+    const { width, height } = state.project;
+    const start = state.currentTime;
+    const base = { startTime: start, duration: Math.max(.5, Math.min(4, scene.durationInSeconds - start)), rotation: 0, opacity: 1, transitionIn: { type: "fade" as const, duration: .35 }, transitionOut: { type: "fade" as const, duration: .35 }, keyframes: [] };
+    const text = (name: string, content: string, y: number, motionPresetId: "anchor-reveal" | "sentence-build" | "scatter-gather" | "text-pill", delay = 0): VisualComponent => ({ ...base, id: uid("text"), name, type: "text", content, x: width * .1, y, width: width * .8, height: height * .16, startTime: start + delay, duration: Math.max(.5, base.duration - delay), fontSize: width * .075, fontWeight: 800, color: "#f7f7f4", motionPresetId, motionSettings: { duration: .65, stagger: .07, splitBy: "words" }, wordStyles: [], typingSfx: { enabled: false, volume: .18, pitch: 1 } });
+    const ui = (name: string, uiPreset: UIComponent["preset"], x: number, y: number, componentWidth: number, componentHeight: number, delay = 0): VisualComponent => ({ ...base, id: uid("ui"), name, type: "ui", preset: uiPreset, label: name, x, y, width: componentWidth, height: componentHeight, startTime: start + delay, duration: Math.max(.5, base.duration - delay), deviceMotion: uiPreset.startsWith("device-") ? "float" : "none", pointerMotion: uiPreset === "pointer" ? "click" : "none", pointerClickRing: uiPreset === "pointer", pointerTrail: false, mediaSrc: null });
+    let components: VisualComponent[];
+    if (preset === "phone-demo") components = [text("Product headline", "Your product in motion", height * .12, "sentence-build"), ui("3D Phone", "device-phone", width * .26, height * .31, width * .48, height * .5, .35), ui("Demo pointer", "pointer", width * .55, height * .55, width * .14, height * .12, .85)];
+    else if (preset === "otp-flow") components = [text("Verification title", "Verify in seconds", height * .15, "anchor-reveal"), ui("OTP verification", "otp", width * .17, height * .39, width * .66, height * .2, .45), ui("Success pointer", "pointer", width * .63, height * .57, width * .13, height * .1, 1.05)];
+    else if (preset === "notification-brand") components = [ui("Notification stack", "notification-stack", width * .15, height * .22, width * .7, height * .28), text("Brand resolve", "Everything, beautifully connected.", height * .58, "text-pill", .9)];
+    else components = [text("Scatter logo build", "K I N E T I Q", height * .34, "scatter-gather"), text("Brand statement", "Design in motion.", height * .5, "anchor-reveal", .75)];
+    const layers = components.map((component, index) => ({ id: uid("layer"), name: component.name, visible: true, locked: false, components: [component] }));
+    return { project: { ...state.project, scenes: [{ ...scene, durationInSeconds: Math.max(scene.durationInSeconds, start + 4), layers: [...scene.layers, ...layers] }, ...state.project.scenes.slice(1)] }, selectedLayerId: layers.at(-1)?.id ?? state.selectedLayerId, selectedComponentId: components.at(-1)?.id ?? state.selectedComponentId, selectedComponentIds: components.at(-1) ? [components.at(-1)!.id] : state.selectedComponentIds, replayKey: state.replayKey + 1 };
+  });
 }
 
 export function PlaybackStartGuard() {
@@ -259,7 +286,7 @@ export function EditorToolBrowser() {
 
           {active === "backgrounds" && <div className="kinetiq-tool-section"><div className="kinetiq-background-grid">{backgroundPresets.map((preset) => <button key={preset.id} type="button" className={`kinetiq-background-card ${scene.backgroundPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setBackgroundPreset(preset.id)}><span className="kinetiq-background-swatch" style={{ backgroundColor: preset.backgroundColor, backgroundImage: preset.backgroundImage, backgroundSize: preset.backgroundSize }} /><span>{preset.name}</span></button>)}</div></div>}
 
-          {active === "motion" && <div className="kinetiq-tool-section"><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Entrance & text effects</div>{motionPresets.map((preset) => <button key={preset.id} type="button" disabled={!selectedText} className={`kinetiq-library-card ${selectedText?.motionPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setMotionPreset(preset.id)}><span className="text-[10px] font-semibold">{preset.name}</span><span className="text-[8px] opacity-45">{preset.description}</span></button>)}</div></div>}
+          {active === "motion" && <div className="kinetiq-tool-section"><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Scene recipes</div>{([{ id: "logo-build", label: "Logo + text build", hint: "Scatter into a branded resolve" }, { id: "phone-demo", label: "Phone product demo", hint: "Headline, device, and pointer" }, { id: "otp-flow", label: "OTP verification", hint: "Title, code UI, and success click" }, { id: "notification-brand", label: "UI to brand", hint: "Notification stack into statement" }] as const).map((item) => <button key={item.id} type="button" className="kinetiq-library-card" onClick={() => insertSequencePreset(item.id)}><span className="text-[10px] font-semibold">{item.label}</span><span className="text-[8px] opacity-45">{item.hint}</span></button>)}</div><div className="kinetiq-tool-group"><div className="kinetiq-group-label">Entrance & text effects</div>{motionPresets.map((preset) => <button key={preset.id} type="button" disabled={!selectedText} className={`kinetiq-library-card ${selectedText?.motionPresetId === preset.id ? "is-selected" : ""}`} onClick={() => useEditorStore.getState().setMotionPreset(preset.id)}><span className="text-[10px] font-semibold">{preset.name}</span><span className="text-[8px] opacity-45">{preset.description}</span></button>)}</div></div>}
 
           {active === "transitions" && <div className="kinetiq-tool-section">
             {!selectedComponent ? <div className="kinetiq-empty-card">Select a component to apply transitions.</div> : <>

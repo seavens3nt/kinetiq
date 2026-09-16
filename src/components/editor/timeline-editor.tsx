@@ -149,6 +149,25 @@ export function TimelineEditor() {
     window.addEventListener("pointerup", onUp);
   };
 
+  const beginKeyframeDrag = (event: React.PointerEvent, componentId: string, keyframeId: string, originalTime: number, componentDuration: number) => {
+    event.stopPropagation();
+    checkpoint();
+    const pointerStart = pointerToTime(event.clientX);
+    const onMove = (moveEvent: PointerEvent) => {
+      const nextTime = clamp(originalTime + pointerToTime(moveEvent.clientX) - pointerStart, 0, componentDuration);
+      useEditorStore.setState((state) => {
+        const scene = state.project.scenes[0];
+        return { project: { ...state.project, scenes: [{ ...scene, layers: scene.layers.map((layer) => ({ ...layer, components: layer.components.map((component) => component.id === componentId ? { ...component, keyframes: (component.keyframes ?? []).map((keyframe) => keyframe.id === keyframeId ? { ...keyframe, time: nextTime } : keyframe).sort((a, b) => a.time - b.time) } : component) })) }, ...state.project.scenes.slice(1)] }, currentTime: Math.min(duration, scene.layers.flatMap((layer) => layer.components).find((component) => component.id === componentId)!.startTime + nextTime) };
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
   const toolButton = "grid h-7 min-w-7 place-items-center rounded-md border border-white/10 bg-white/[0.025] px-1.5 text-[10px] text-white/45 transition hover:border-[#8067FF]/50 hover:bg-[#8067FF]/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-25";
 
   const labels = (
@@ -207,7 +226,7 @@ export function TimelineEditor() {
                     {component.transitionOut?.type && component.transitionOut.type !== "none" && <div className="pointer-events-none absolute inset-y-0 right-0 w-3 rounded-r-md bg-gradient-to-l from-[#D7FF45]/30 to-transparent" title={`Out: ${component.transitionOut.type}`} />}
                     <div className="absolute inset-y-0 left-0 w-2 cursor-ew-resize" onPointerDown={(e) => beginTimedDrag(e, component.id, component.startTime, component.duration, "resize-start", "component")} />
                     <div className="pointer-events-none flex h-full items-center gap-1 truncate px-2"><span>{meta.icon}</span><span className="truncate">{component.name}</span>{component.type === "video" && (component.playbackRate ?? 1) !== 1 && <span className="text-[#D7FF45]">{component.playbackRate}×</span>}</div>
-                    {(component.keyframes ?? []).map((keyframe) => <div key={keyframe.id} className="pointer-events-none absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-[#D7FF45] bg-[#0B0B0F]" style={{ left: `${clamp(keyframe.time / component.duration * 100, 0, 100)}%` }} />)}
+                    {(component.keyframes ?? []).map((keyframe) => <button type="button" aria-label={`Move keyframe at ${keyframe.time.toFixed(2)} seconds`} key={keyframe.id} className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 cursor-ew-resize border border-[#D7FF45] bg-[#0B0B0F] hover:bg-[#D7FF45]" style={{ left: `${clamp(keyframe.time / component.duration * 100, 0, 100)}%` }} onPointerDown={(event) => beginKeyframeDrag(event, component.id, keyframe.id, keyframe.time, component.duration)} />)}
                     <div className="absolute inset-y-0 right-0 w-2 cursor-ew-resize" onPointerDown={(e) => beginTimedDrag(e, component.id, component.startTime, component.duration, "resize-end", "component")} />
                   </div>;
                 })}
